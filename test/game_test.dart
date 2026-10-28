@@ -32,6 +32,7 @@ GameUtama _buatGame({
   );
   for (final nama in [
     GameUtama.overlayMenu,
+    GameUtama.overlayGarasi,
     GameUtama.overlayHud,
     GameUtama.overlayJeda,
     GameUtama.overlayLevelSelesai,

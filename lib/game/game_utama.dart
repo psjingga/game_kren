@@ -8,6 +8,7 @@ import 'package:flutter/widgets.dart';
 import 'barang_ambilan.dart';
 import 'efek_crash.dart';
 import 'gambar_game.dart';
+import 'garasi.dart';
 import 'garis_finish.dart';
 import 'jam.dart';
 import 'jalan.dart';
@@ -32,6 +33,7 @@ class GameUtama extends FlameGame with HasCollisionDetection {
   }
 
   static const overlayMenu = 'menu';
+  static const overlayGarasi = 'garasi';
   static const overlayHud = 'hud';
   static const overlayJeda = 'jeda';
   static const overlayLevelSelesai = 'levelSelesai';
@@ -69,6 +71,9 @@ class GameUtama extends FlameGame with HasCollisionDetection {
   /// Skor tertinggi dan koin terkumpul sepanjang masa (tersimpan di HP).
   late final rekor = ValueNotifier<int>(_penyimpanan.rekor);
   late final totalKoin = ValueNotifier<int>(_penyimpanan.totalKoin);
+
+  /// Mobil yang dimiliki & dipakai, dibeli dengan [totalKoin].
+  late final garasi = Garasi(_penyimpanan, totalKoin);
 
   /// Sisa waktu level dalam detik (dibulatkan ke atas) untuk HUD.
   final sisaDetik = ValueNotifier<int>(LevelConfig.durasiLevel.ceil());
@@ -183,6 +188,20 @@ class GameUtama extends FlameGame with HasCollisionDetection {
   void lifecycleStateChange(AppLifecycleState state) {
     if (state == AppLifecycleState.hidden) jeda();
     super.lifecycleStateChange(state);
+  }
+
+  /// Dari tombol "Garasi" di menu awal.
+  void bukaGarasi() {
+    if (!_diMenu) return;
+    overlays
+      ..remove(overlayMenu)
+      ..add(overlayGarasi);
+  }
+
+  void tutupGarasi() {
+    overlays
+      ..remove(overlayGarasi)
+      ..add(overlayMenu);
   }
 
   /// Dari tombol "Main" di menu awal.
@@ -387,6 +406,7 @@ class GameUtama extends FlameGame with HasCollisionDetection {
     ]) {
       notifier.dispose();
     }
+    garasi.dispose();
     super.onRemove();
   }
 }

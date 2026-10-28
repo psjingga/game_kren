@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 import 'efek_crash.dart';
 import 'game_utama.dart';
 
-/// Mobil pemain, dilihat dari atas.
+/// Mobil pemain dilihat dari atas, bergambar mobil yang dipakai di garasi.
 class Player extends PositionComponent with HasGameReference<GameUtama> {
   Player() {
     size = Vector2(52, 80);
@@ -87,6 +87,7 @@ class Player extends PositionComponent with HasGameReference<GameUtama> {
 
   @override
   void render(Canvas canvas) {
-    game.gambar.mobil.render(canvas, size, overridePaint: _paint);
+    final gambar = game.gambar.mobil[game.garasi.dipakai.value]!;
+    gambar.render(canvas, size, overridePaint: _paint);
   }
 }

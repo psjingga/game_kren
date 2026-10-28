@@ -5,6 +5,7 @@ import 'ads/banner_ad_slot.dart';
 import 'ads/iklan_berhadiah.dart';
 import 'ads/iklan_layar_penuh.dart';
 import 'game/game_utama.dart';
+import 'game/garasi_overlay.dart';
 import 'game/level_selesai_overlay.dart';
 import 'game/overlays.dart';
 import 'game/penyimpanan.dart';
@@ -87,6 +88,8 @@ class _LayarGameState extends State<LayarGame> {
                   ),
                   overlayBuilderMap: {
                     GameUtama.overlayMenu: (_, game) => MenuOverlay(game: game),
+                    GameUtama.overlayGarasi: (_, game) =>
+                        GarasiOverlay(game: game),
                     GameUtama.overlayHud: (_, game) => HudOverlay(game: game),
                     GameUtama.overlayJeda: (_, game) => JedaOverlay(game: game),
                     GameUtama.overlayLevelSelesai: (_, game) =>

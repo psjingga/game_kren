@@ -19,9 +19,9 @@ final _gayaTombolKedua = OutlinedButton.styleFrom(
   textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
 );
 
-/// Ikon koin kecil + jumlah, dipakai di HUD, menu, dan Game Over.
-class _JumlahKoin extends StatelessWidget {
-  const _JumlahKoin(this.jumlah, {this.ukuran = 18});
+/// Ikon koin kecil + jumlah, dipakai di HUD, menu, garasi, dan Game Over.
+class JumlahKoin extends StatelessWidget {
+  const JumlahKoin(this.jumlah, {super.key, this.ukuran = 18});
 
   final int jumlah;
   final double ukuran;
@@ -96,7 +96,7 @@ class MenuOverlay extends StatelessWidget {
             const SizedBox(height: 8),
             ValueListenableBuilder<int>(
               valueListenable: game.totalKoin,
-              builder: (_, total, _) => _JumlahKoin(total, ukuran: 20),
+              builder: (_, total, _) => JumlahKoin(total, ukuran: 20),
             ),
             const SizedBox(height: 32),
             FilledButton.icon(
@@ -104,6 +104,13 @@ class MenuOverlay extends StatelessWidget {
               icon: const Icon(Icons.play_arrow_rounded),
               label: const Text('MAIN'),
               style: _gayaTombolUtama,
+            ),
+            const SizedBox(height: 12),
+            OutlinedButton.icon(
+              onPressed: game.bukaGarasi,
+              icon: const Icon(Icons.garage_rounded),
+              label: const Text('GARASI'),
+              style: _gayaTombolKedua,
             ),
             const SizedBox(height: 16),
             const Text(
@@ -190,7 +197,7 @@ class HudOverlay extends StatelessWidget {
             const SizedBox(height: 4),
             ValueListenableBuilder<int>(
               valueListenable: game.koin,
-              builder: (_, koin, _) => _JumlahKoin(koin),
+              builder: (_, koin, _) => JumlahKoin(koin),
             ),
           ],
         ),
@@ -408,7 +415,7 @@ class GameOverOverlay extends StatelessWidget {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                _JumlahKoin(game.koin.value),
+                JumlahKoin(game.koin.value),
               ],
             ),
             const SizedBox(height: 28),
