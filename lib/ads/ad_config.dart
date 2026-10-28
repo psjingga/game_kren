@@ -7,14 +7,29 @@ import 'package:flutter/foundation.dart';
 /// - Debug/profile (`fvm flutter run`): selalu memakai ID test Google, aman
 ///   diklik dan tidak butuh akun AdMob.
 /// - Release (`fvm flutter build ... --release`): memakai ID asli di bawah.
-///   Selama ID asli masih kosong, banner tidak ditampilkan di build release.
+///   Selama ID asli masih kosong, iklan tersebut tidak ditampilkan di build
+///   release.
 abstract class AdConfig {
   // TODO: isi dengan ID unit iklan banner asli dari AdMob.
   static const _bannerAndroidAsli = '';
   static const _bannerIosAsli = '';
 
+  // TODO: isi dengan ID unit iklan interstitial (layar penuh) asli dari
+  // AdMob. Aktifkan jenis iklan video saat membuat unitnya.
+  static const _interstitialAndroidAsli = '';
+  static const _interstitialIosAsli = '';
+
   static const _bannerAndroidTest = 'ca-app-pub-3940256099942544/6300978111';
   static const _bannerIosTest = 'ca-app-pub-3940256099942544/2934735716';
+
+  // ID test Google untuk interstitial video.
+  static const _interstitialAndroidTest =
+      'ca-app-pub-3940256099942544/8691691433';
+  static const _interstitialIosTest = 'ca-app-pub-3940256099942544/5135589807';
+
+  /// Iklan layar penuh muncul setiap kali game over ke-N. `1` = setiap game
+  /// over; naikkan supaya pemain tidak terlalu sering terganggu.
+  static const interstitialSetiapGameOver = 1;
 
   /// ID perangkat yang selalu menerima iklan test walaupun memakai ID asli.
   /// ID muncul di log saat aplikasi jalan di HP, cari teks "test device".
@@ -32,4 +47,16 @@ abstract class AdConfig {
 
   static bool get isBannerEnabled =>
       isSupportedPlatform && bannerAdUnitId.isNotEmpty;
+
+  static String get interstitialAdUnitId {
+    if (!kReleaseMode) {
+      return Platform.isAndroid
+          ? _interstitialAndroidTest
+          : _interstitialIosTest;
+    }
+    return Platform.isAndroid ? _interstitialAndroidAsli : _interstitialIosAsli;
+  }
+
+  static bool get isInterstitialEnabled =>
+      isSupportedPlatform && interstitialAdUnitId.isNotEmpty;
 }

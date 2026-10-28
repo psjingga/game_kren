@@ -218,6 +218,35 @@ void main() {
     },
   );
 
+  var gameOverDipanggil = 0;
+  testWithGame<GameUtama>(
+    'onGameOver dipanggil sekali saat layar Game Over muncul',
+    () {
+      gameOverDipanggil = 0;
+      final game = GameUtama(
+        random: Random(1),
+        onGameOver: () => gameOverDipanggil++,
+      );
+      game.overlays.addEntry(
+        GameUtama.overlayGameOver,
+        (_, _) => const SizedBox(),
+      );
+      return game;
+    },
+    (game) async {
+      await _playerSiap(game);
+      game.gameOver();
+      await game.ready();
+      game.update(GameUtama.jedaGameOver / 2);
+      expect(gameOverDipanggil, 0, reason: 'iklan menunggu efek terbakar');
+
+      game.update(GameUtama.jedaGameOver / 2 + 0.1);
+      game.update(1);
+      expect(gameOverDipanggil, 1);
+      expect(game.overlays.isActive(GameUtama.overlayGameOver), isTrue);
+    },
+  );
+
   testWithGame<GameUtama>('main lagi mengembalikan game ke awal', _buatGame, (
     game,
   ) async {

@@ -2,6 +2,7 @@ import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
 
 import 'ads/banner_ad_slot.dart';
+import 'ads/iklan_layar_penuh.dart';
 import 'game/game_utama.dart';
 import 'game/level_selesai_overlay.dart';
 import 'game/overlays.dart';
@@ -19,8 +20,22 @@ class LayarGame extends StatefulWidget {
 }
 
 class _LayarGameState extends State<LayarGame> {
+  IklanLayarPenuh? _iklanLayarPenuh;
+
   // Dibuat sekali; membuat game baru di build() akan mereset permainan.
-  final _game = GameUtama();
+  late final _game = GameUtama(onGameOver: () => _iklanLayarPenuh?.gameOver());
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.showAds) _iklanLayarPenuh = IklanLayarPenuh()..muat();
+  }
+
+  @override
+  void dispose() {
+    _iklanLayarPenuh?.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {

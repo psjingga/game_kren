@@ -15,7 +15,7 @@ import 'player.dart';
 
 /// Mengatur dunia game: munculnya jebakan, skor, level, dan game over.
 class GameUtama extends FlameGame with DragCallbacks, HasCollisionDetection {
-  GameUtama({Random? random}) : random = random ?? Random();
+  GameUtama({Random? random, this.onGameOver}) : random = random ?? Random();
 
   static const overlayHud = 'hud';
   static const overlayLevelSelesai = 'levelSelesai';
@@ -25,6 +25,10 @@ class GameUtama extends FlameGame with DragCallbacks, HasCollisionDetection {
   static const jedaGameOver = 1.2;
 
   final Random random;
+
+  /// Dipanggil saat layar Game Over muncul (misalnya untuk iklan layar
+  /// penuh). Game sendiri tidak tahu apa-apa soal iklan.
+  final VoidCallback? onGameOver;
 
   /// Didengarkan oleh overlay Flutter (HUD, Level Selesai, Game Over).
   final level = ValueNotifier<int>(1);
@@ -126,7 +130,10 @@ class GameUtama extends FlameGame with DragCallbacks, HasCollisionDetection {
       TimerComponent(
         period: jedaGameOver,
         removeOnFinish: true,
-        onTick: () => overlays.add(overlayGameOver),
+        onTick: () {
+          overlays.add(overlayGameOver);
+          onGameOver?.call();
+        },
       ),
     );
   }
