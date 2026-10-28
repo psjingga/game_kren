@@ -33,6 +33,8 @@ GameUtama _buatGame({
   for (final nama in [
     GameUtama.overlayMenu,
     GameUtama.overlayGarasi,
+    GameUtama.overlayMisi,
+    GameUtama.overlayHadiahHarian,
     GameUtama.overlayHud,
     GameUtama.overlayJeda,
     GameUtama.overlayLevelSelesai,
@@ -257,18 +259,18 @@ void main() {
     },
   );
 
-  testWithGame<GameUtama>('mobil tidak bisa keluar jalan', _buatGame, (
+  testWithGame<GameUtama>('mobil tidak bisa keluar ke rumput', _buatGame, (
     game,
   ) async {
     final player = await _playerSiap(game);
     game.tekanKiri(ditekan: true);
     game.update(10);
-    expect(player.position.x, 0);
+    expect(player.position.x, game.batasKiri);
 
     game.tekanKiri(ditekan: false);
     game.tekanKanan(ditekan: true);
     game.update(10);
-    expect(player.position.x, game.size.x - player.size.x);
+    expect(player.position.x, game.batasKanan - player.size.x);
   });
 
   testWithGame<GameUtama>('mobil di level 2 bergerak lebih cepat', _buatGame, (
@@ -559,13 +561,23 @@ void main() {
     },
   );
 
-  test('rekor dan koin terbaca lagi dari penyimpanan', () async {
-    final penyimpanan = PenyimpananMemori();
-    await penyimpanan.simpan(rekor: 7, totalKoin: 20);
-    final game = GameUtama(penyimpanan: penyimpanan);
-    expect(game.rekor.value, 7);
-    expect(game.totalKoin.value, 20);
-  });
+  final penyimpananBersama = PenyimpananMemori();
+  testWithGame<GameUtama>(
+    'rekor dan koin tersimpan, lalu terbaca lagi saat game dibuka ulang',
+    () => _buatGame(penyimpanan: penyimpananBersama),
+    (game) async {
+      await _playerSiap(game);
+      for (var i = 0; i < 7; i++) {
+        game.jebakanDihindari();
+      }
+      game.ambilKoin();
+      await _tabrakSampaiGameOver(game);
+
+      final dibukaLagi = GameUtama(penyimpanan: penyimpananBersama);
+      expect(dibukaLagi.rekor.value, 7);
+      expect(dibukaLagi.totalKoin.value, 1);
+    },
+  );
 
   testWithGame<GameUtama>(
     'lanjut setelah iklan: permainan diteruskan sekali saja',
@@ -701,6 +713,12 @@ void main() {
 
     expect(find.text('KREN KAMU'), findsOneWidget);
     expect(find.text('Rekor 0'), findsOneWidget);
+
+    // Pertama kali dibuka: hadiah harian muncul di atas menu.
+    expect(find.text('HADIAH HARIAN'), findsOneWidget);
+    await tester.tap(find.text('KLAIM +10'));
+    await tester.pump();
+    expect(find.text('HADIAH HARIAN'), findsNothing);
 
     await tester.tap(find.text('MAIN'));
     await tester.pump();

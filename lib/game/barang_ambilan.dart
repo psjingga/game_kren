@@ -4,7 +4,8 @@ import 'package:flame/components.dart';
 import 'game_utama.dart';
 import 'player.dart';
 
-/// Barang di jalan yang menguntungkan bila diambil (koin, jam). Jatuh secepat
+/// Barang di jalan yang menguntungkan bila diambil (koin, jam, power-up).
+/// Jatuh secepat
 /// jebakan dan diambil saat mengenai mobil.
 abstract class BarangAmbilan extends PositionComponent
     with HasGameReference<GameUtama>, CollisionCallbacks {
@@ -28,7 +29,9 @@ abstract class BarangAmbilan extends PositionComponent
   void onMount() {
     super.onMount();
     _kecepatanJatuh = game.levelConfig.kecepatanJebakan;
-    final acakX = game.random.nextDouble() * (game.size.x - size.x);
+    final acakX =
+        game.batasKiri +
+        game.random.nextDouble() * (game.batasKanan - game.batasKiri - size.x);
     position = Vector2(_x ?? acakX, -50);
   }
 

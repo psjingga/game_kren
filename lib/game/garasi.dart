@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 
+import 'dompet.dart';
 import 'penyimpanan.dart';
 
 /// Satu mobil di garasi.
@@ -32,20 +33,23 @@ enum HasilBeli { berhasil, koinKurang, sudahPunya }
 
 /// Mobil yang dimiliki dan dipakai, dibeli dengan koin.
 class Garasi {
-  Garasi(this._penyimpanan, this._totalKoin)
+  Garasi(this._penyimpanan, this._dompet)
     : dimiliki = ValueNotifier({
         daftarMobil.first.id,
-        ..._penyimpanan.mobilDimiliki,
+        ...?_penyimpanan.bacaDaftar(_kunciDimiliki),
       }),
-      dipakai = ValueNotifier(_penyimpanan.mobilDipakai) {
-    // Data lama atau rusak: kembali ke mobil awal.
+      dipakai = ValueNotifier(_penyimpanan.bacaTeks(_kunciDipakai) ?? '') {
+    // Belum pernah memilih, atau data rusak: kembali ke mobil awal.
     if (!dimiliki.value.contains(dipakai.value)) {
       dipakai.value = daftarMobil.first.id;
     }
   }
 
+  static const _kunciDimiliki = 'mobil_dimiliki';
+  static const _kunciDipakai = 'mobil_dipakai';
+
   final Penyimpanan _penyimpanan;
-  final ValueNotifier<int> _totalKoin;
+  final Dompet _dompet;
 
   final ValueNotifier<Set<String>> dimiliki;
   final ValueNotifier<String> dipakai;
@@ -58,27 +62,22 @@ class Garasi {
   /// Membeli mobil dengan koin lalu langsung memakainya.
   HasilBeli beli(DataMobil mobil) {
     if (punya(mobil.id)) return HasilBeli.sudahPunya;
-    if (_totalKoin.value < mobil.harga) return HasilBeli.koinKurang;
+    if (!_dompet.bayar(mobil.harga)) return HasilBeli.koinKurang;
 
-    _totalKoin.value -= mobil.harga;
     dimiliki.value = {...dimiliki.value, mobil.id};
-    dipakai.value = mobil.id;
-    _simpan();
+    _penyimpanan.tulisDaftar(_kunciDimiliki, dimiliki.value.toList());
+    _pakai(mobil.id);
     return HasilBeli.berhasil;
   }
 
   void pakai(DataMobil mobil) {
     if (!punya(mobil.id) || dipakai.value == mobil.id) return;
-    dipakai.value = mobil.id;
-    _simpan();
+    _pakai(mobil.id);
   }
 
-  void _simpan() {
-    _penyimpanan.simpanGarasi(
-      totalKoin: _totalKoin.value,
-      mobilDimiliki: dimiliki.value,
-      mobilDipakai: dipakai.value,
-    );
+  void _pakai(String id) {
+    dipakai.value = id;
+    _penyimpanan.tulisTeks(_kunciDipakai, id);
   }
 
   void dispose() {

@@ -14,6 +14,20 @@ class Koin extends BarangAmbilan {
     ..strokeWidth = 3;
   static final _kilau = Paint()..color = const Color(0xCCFFF8E1);
 
+  /// Jarak dan kecepatan tarikan magnet.
+  static const _jangkauanMagnet = 230.0;
+  static const _kecepatanMagnet = 650.0;
+
+  @override
+  void update(double dt) {
+    super.update(dt);
+    if (!game.status.magnetAktif || game.isGameOver) return;
+    final arah = game.kotakMobil.center.toVector2() - absoluteCenter;
+    if (arah.length < _jangkauanMagnet) {
+      position += arah.normalized() * _kecepatanMagnet * dt;
+    }
+  }
+
   @override
   void diambil() => game.ambilKoin();
 

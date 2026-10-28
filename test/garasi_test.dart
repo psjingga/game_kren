@@ -1,6 +1,7 @@
 import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:game_kren_kamu/game/dompet.dart';
 import 'package:game_kren_kamu/game/game_utama.dart';
 import 'package:game_kren_kamu/game/garasi.dart';
 import 'package:game_kren_kamu/game/garasi_overlay.dart';
@@ -12,7 +13,8 @@ DataMobil _mobil(String id) => daftarMobil.firstWhere((m) => m.id == id);
 void main() {
   group('Garasi', () {
     test('awalnya hanya punya mobil gratis dan memakainya', () {
-      final garasi = Garasi(PenyimpananMemori(), ValueNotifier(0));
+      final penyimpanan = PenyimpananMemori();
+      final garasi = Garasi(penyimpanan, Dompet(penyimpanan));
       expect(garasi.dimiliki.value, {'biru'});
       expect(garasi.dipakai.value, 'biru');
       expect(garasi.mobilDipakai.harga, 0);
@@ -20,59 +22,60 @@ void main() {
 
     test('membeli mobil mengurangi koin, memakainya, dan menyimpannya', () {
       final penyimpanan = PenyimpananMemori(totalKoin: 70);
-      final koin = ValueNotifier(70);
-      final garasi = Garasi(penyimpanan, koin);
+      final dompet = Dompet(penyimpanan);
+      final garasi = Garasi(penyimpanan, dompet);
 
       expect(garasi.beli(_mobil('taksi')), HasilBeli.berhasil);
 
-      expect(koin.value, 20);
+      expect(dompet.saldo.value, 20);
       expect(garasi.punya('taksi'), isTrue);
       expect(garasi.dipakai.value, 'taksi');
-      expect(penyimpanan.totalKoin, 20);
-      expect(penyimpanan.mobilDimiliki, containsAll(['biru', 'taksi']));
-      expect(penyimpanan.mobilDipakai, 'taksi');
+
+      // Dibuka lagi (aplikasi dibuka ulang): data tetap.
+      final dibukaLagi = Garasi(penyimpanan, Dompet(penyimpanan));
+      expect(dibukaLagi.dimiliki.value, containsAll(['biru', 'taksi']));
+      expect(dibukaLagi.dipakai.value, 'taksi');
+      expect(Dompet(penyimpanan).saldo.value, 20);
     });
 
     test('koin kurang: tidak bisa membeli', () {
-      final koin = ValueNotifier(100);
-      final garasi = Garasi(PenyimpananMemori(), koin);
+      final penyimpanan = PenyimpananMemori(totalKoin: 100);
+      final dompet = Dompet(penyimpanan);
+      final garasi = Garasi(penyimpanan, dompet);
 
       expect(garasi.beli(_mobil('polisi')), HasilBeli.koinKurang);
-      expect(koin.value, 100);
+      expect(dompet.saldo.value, 100);
       expect(garasi.punya('polisi'), isFalse);
       expect(garasi.dipakai.value, 'biru');
     });
 
     test('mobil yang sudah dimiliki tidak dibeli dua kali', () {
-      final koin = ValueNotifier(500);
-      final garasi = Garasi(PenyimpananMemori(), koin);
-      garasi.beli(_mobil('taksi'));
+      final penyimpanan = PenyimpananMemori(totalKoin: 500);
+      final dompet = Dompet(penyimpanan);
+      final garasi = Garasi(penyimpanan, dompet)..beli(_mobil('taksi'));
 
       expect(garasi.beli(_mobil('taksi')), HasilBeli.sudahPunya);
-      expect(koin.value, 450);
+      expect(dompet.saldo.value, 450);
     });
 
     test('ganti mobil hanya ke mobil yang dimiliki', () {
-      final penyimpanan = PenyimpananMemori(
-        mobilDimiliki: {'biru', 'taksi'},
-        mobilDipakai: 'taksi',
-      );
-      final garasi = Garasi(penyimpanan, ValueNotifier(0));
+      final penyimpanan = PenyimpananMemori(totalKoin: 50);
+      final garasi = Garasi(penyimpanan, Dompet(penyimpanan))
+        ..beli(_mobil('taksi'));
       expect(garasi.dipakai.value, 'taksi');
 
       garasi.pakai(_mobil('biru'));
       expect(garasi.dipakai.value, 'biru');
-      expect(penyimpanan.mobilDipakai, 'biru');
+      expect(Garasi(penyimpanan, Dompet(penyimpanan)).dipakai.value, 'biru');
 
       garasi.pakai(_mobil('mewah'));
       expect(garasi.dipakai.value, 'biru');
     });
 
     test('data tersimpan yang rusak kembali ke mobil awal', () {
-      final garasi = Garasi(
-        PenyimpananMemori(mobilDipakai: 'mewah'),
-        ValueNotifier(0),
-      );
+      final penyimpanan = PenyimpananMemori();
+      penyimpanan.data['mobil_dipakai'] = 'mewah'; // belum dibeli
+      final garasi = Garasi(penyimpanan, Dompet(penyimpanan));
       expect(garasi.dipakai.value, 'biru');
     });
   });
@@ -91,6 +94,7 @@ void main() {
             overlayBuilderMap: {
               GameUtama.overlayMenu: (_, game) => MenuOverlay(game: game),
               GameUtama.overlayGarasi: (_, game) => GarasiOverlay(game: game),
+              GameUtama.overlayHadiahHarian: (_, _) => const SizedBox(),
             },
           ),
         ),

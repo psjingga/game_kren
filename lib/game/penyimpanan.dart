@@ -1,33 +1,27 @@
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// Data pemain yang bertahan setelah aplikasi ditutup.
+/// Data pemain yang bertahan setelah aplikasi ditutup, sebagai pasangan
+/// kunci-nilai. Setiap fitur (rekor, garasi, hadiah harian, misi) memakai
+/// kuncinya sendiri.
 abstract class Penyimpanan {
-  int get rekor;
-  int get totalKoin;
+  int? bacaInt(String kunci);
+  String? bacaTeks(String kunci);
+  List<String>? bacaDaftar(String kunci);
 
-  /// Id mobil yang sudah dibeli (lihat `daftarMobil`).
-  Set<String> get mobilDimiliki;
-  String get mobilDipakai;
+  Future<void> tulisInt(String kunci, int nilai);
+  Future<void> tulisTeks(String kunci, String nilai);
+  Future<void> tulisDaftar(String kunci, List<String> nilai);
+}
 
-  Future<void> simpan({required int rekor, required int totalKoin});
-
-  /// Dipanggil saat membeli atau mengganti mobil. Total koin ikut disimpan
-  /// karena pembelian mengurangi koin.
-  Future<void> simpanGarasi({
-    required int totalKoin,
-    required Set<String> mobilDimiliki,
-    required String mobilDipakai,
-  });
+/// Kunci yang dipakai lebih dari satu fitur.
+abstract class KunciSimpan {
+  static const rekor = 'rekor';
+  static const totalKoin = 'total_koin';
 }
 
 /// Disimpan di HP lewat shared_preferences.
 class PenyimpananHp implements Penyimpanan {
   PenyimpananHp._(this._prefs);
-
-  static const _kunciRekor = 'rekor';
-  static const _kunciTotalKoin = 'total_koin';
-  static const _kunciMobilDimiliki = 'mobil_dimiliki';
-  static const _kunciMobilDipakai = 'mobil_dipakai';
 
   final SharedPreferences _prefs;
 
@@ -35,71 +29,52 @@ class PenyimpananHp implements Penyimpanan {
       PenyimpananHp._(await SharedPreferences.getInstance());
 
   @override
-  int get rekor => _prefs.getInt(_kunciRekor) ?? 0;
+  int? bacaInt(String kunci) => _prefs.getInt(kunci);
 
   @override
-  int get totalKoin => _prefs.getInt(_kunciTotalKoin) ?? 0;
+  String? bacaTeks(String kunci) => _prefs.getString(kunci);
 
   @override
-  Set<String> get mobilDimiliki =>
-      (_prefs.getStringList(_kunciMobilDimiliki) ?? const []).toSet();
+  List<String>? bacaDaftar(String kunci) => _prefs.getStringList(kunci);
 
   @override
-  String get mobilDipakai => _prefs.getString(_kunciMobilDipakai) ?? '';
+  Future<void> tulisInt(String kunci, int nilai) => _prefs.setInt(kunci, nilai);
 
   @override
-  Future<void> simpan({required int rekor, required int totalKoin}) async {
-    await _prefs.setInt(_kunciRekor, rekor);
-    await _prefs.setInt(_kunciTotalKoin, totalKoin);
-  }
+  Future<void> tulisTeks(String kunci, String nilai) =>
+      _prefs.setString(kunci, nilai);
 
   @override
-  Future<void> simpanGarasi({
-    required int totalKoin,
-    required Set<String> mobilDimiliki,
-    required String mobilDipakai,
-  }) async {
-    await _prefs.setInt(_kunciTotalKoin, totalKoin);
-    await _prefs.setStringList(_kunciMobilDimiliki, mobilDimiliki.toList());
-    await _prefs.setString(_kunciMobilDipakai, mobilDipakai);
-  }
+  Future<void> tulisDaftar(String kunci, List<String> nilai) =>
+      _prefs.setStringList(kunci, nilai);
 }
 
 /// Hanya di memori (hilang saat aplikasi ditutup), untuk test.
 class PenyimpananMemori implements Penyimpanan {
-  PenyimpananMemori({
-    this.rekor = 0,
-    this.totalKoin = 0,
-    Set<String>? mobilDimiliki,
-    this.mobilDipakai = '',
-  }) : mobilDimiliki = mobilDimiliki ?? {};
-
-  @override
-  int rekor;
-
-  @override
-  int totalKoin;
-
-  @override
-  Set<String> mobilDimiliki;
-
-  @override
-  String mobilDipakai;
-
-  @override
-  Future<void> simpan({required int rekor, required int totalKoin}) async {
-    this.rekor = rekor;
-    this.totalKoin = totalKoin;
+  PenyimpananMemori({int? rekor, int? totalKoin}) {
+    if (rekor != null) data[KunciSimpan.rekor] = rekor;
+    if (totalKoin != null) data[KunciSimpan.totalKoin] = totalKoin;
   }
 
+  final data = <String, Object>{};
+
   @override
-  Future<void> simpanGarasi({
-    required int totalKoin,
-    required Set<String> mobilDimiliki,
-    required String mobilDipakai,
-  }) async {
-    this.totalKoin = totalKoin;
-    this.mobilDimiliki = {...mobilDimiliki};
-    this.mobilDipakai = mobilDipakai;
-  }
+  int? bacaInt(String kunci) => data[kunci] as int?;
+
+  @override
+  String? bacaTeks(String kunci) => data[kunci] as String?;
+
+  @override
+  List<String>? bacaDaftar(String kunci) => data[kunci] as List<String>?;
+
+  @override
+  Future<void> tulisInt(String kunci, int nilai) async => data[kunci] = nilai;
+
+  @override
+  Future<void> tulisTeks(String kunci, String nilai) async =>
+      data[kunci] = nilai;
+
+  @override
+  Future<void> tulisDaftar(String kunci, List<String> nilai) async =>
+      data[kunci] = [...nilai];
 }

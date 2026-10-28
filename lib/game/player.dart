@@ -1,6 +1,9 @@
+import 'dart:math';
+
 import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
 import 'package:flame/effects.dart';
+import 'package:flame/extensions.dart';
 import 'package:flutter/material.dart';
 
 import 'efek_crash.dart';
@@ -18,10 +21,35 @@ class Player extends PositionComponent with HasGameReference<GameUtama> {
     BlendMode.srcATop,
   );
 
+  static const _insetX = 6.0;
+  static const _insetY = 4.0;
+
+  /// Lama mobil selip setelah melindas oli (detik).
+  static const lamaSelip = 0.8;
+
+  static final _gelembung = Paint()
+    ..color = const Color(0x4026C6DA)
+    ..style = PaintingStyle.fill;
+  static final _tepiGelembung = Paint()
+    ..color = const Color(0xFF80DEEA)
+    ..style = PaintingStyle.stroke
+    ..strokeWidth = 3;
+
   final _paint = Paint()..filterQuality = FilterQuality.medium;
   bool _terbakar = false;
+  double _sisaSelip = 0;
+  double _arahSelip = 0;
 
   bool get terbakar => _terbakar;
+  bool get selip => _sisaSelip > 0;
+
+  /// Kotak tabrakan di koordinat layar (sama dengan hitbox).
+  Rect get kotakTabrak => Rect.fromLTWH(
+    position.x + _insetX,
+    position.y + _insetY,
+    size.x - _insetX * 2,
+    size.y - _insetY * 2,
+  );
 
   @override
   Future<void> onLoad() async {
@@ -29,8 +57,8 @@ class Player extends PositionComponent with HasGameReference<GameUtama> {
     // Solid: jebakan yang sudah berada di dalam mobil tetap terhitung kena.
     add(
       RectangleHitbox(
-        position: Vector2(6, 4),
-        size: Vector2(size.x - 12, size.y - 8),
+        position: Vector2(_insetX, _insetY),
+        size: Vector2(size.x - _insetX * 2, size.y - _insetY * 2),
         isSolid: true,
       ),
     );
@@ -54,10 +82,19 @@ class Player extends PositionComponent with HasGameReference<GameUtama> {
     );
   }
 
+  /// Melindas oli: tergelincir ke samping (arah acak) dan berputar
+  /// sebentar; tombol setir tidak berpengaruh selama selip.
+  void mulaiSelip() {
+    if (_terbakar) return;
+    _sisaSelip = lamaSelip;
+    _arahSelip = game.random.nextBool() ? 1 : -1;
+  }
+
   /// Mobil tertabrak: berhenti, terguncang, gosong, lalu terbakar.
   void tabrakan() {
     if (_terbakar) return;
     _terbakar = true;
+    _sisaSelip = 0;
     _paint.colorFilter = _filterGosong;
 
     add(
@@ -73,13 +110,20 @@ class Player extends PositionComponent with HasGameReference<GameUtama> {
   void update(double dt) {
     super.update(dt);
     if (_terbakar) return;
-    position.x += game.arahMobil * game.levelConfig.kecepatanPemain * dt;
-    position.x = position.x.clamp(0, game.size.x - size.x);
+    final kecepatan = game.levelConfig.kecepatanPemain;
+    if (selip) {
+      _sisaSelip = max(_sisaSelip - dt, 0);
+      position.x += _arahSelip * kecepatan * 0.8 * dt;
+    } else {
+      position.x += game.arahMobil * kecepatan * dt;
+    }
+    position.x = position.x.clamp(game.batasKiri, game.batasKanan - size.x);
   }
 
   /// Hapus efek terbakar untuk permainan baru.
   void pulihkan() {
     _terbakar = false;
+    _sisaSelip = 0;
     _paint.colorFilter = null;
     removeAll(children.where((c) => c is ApiTerbakar || c is Effect));
     keTengah();
@@ -87,7 +131,25 @@ class Player extends PositionComponent with HasGameReference<GameUtama> {
 
   @override
   void render(Canvas canvas) {
+    final pusat = (size / 2).toOffset();
+    canvas.save();
+    if (selip) {
+      // Berputar bolak-balik di sekitar titik tengah mobil.
+      final waktu = lamaSelip - _sisaSelip;
+      canvas
+        ..translate(pusat.dx, pusat.dy)
+        ..rotate(sin(waktu * 25) * 0.35)
+        ..translate(-pusat.dx, -pusat.dy);
+    }
     final gambar = game.gambar.mobil[game.garasi.dipakai.value]!;
     gambar.render(canvas, size, overridePaint: _paint);
+    canvas.restore();
+
+    if (game.status.perisai.value) {
+      final r = size.y / 2 + 6;
+      canvas
+        ..drawCircle(pusat, r, _gelembung)
+        ..drawCircle(pusat, r, _tepiGelembung);
+    }
   }
 }

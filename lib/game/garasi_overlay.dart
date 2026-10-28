@@ -30,7 +30,8 @@ class GarasiOverlay extends StatelessWidget {
                 child: Row(
                   children: [
                     IconButton(
-                      onPressed: game.tutupGarasi,
+                      onPressed: () =>
+                          game.kembaliDariLayar(GameUtama.overlayGarasi),
                       tooltip: 'Kembali',
                       icon: const Icon(Icons.arrow_back_rounded),
                       color: Colors.white,

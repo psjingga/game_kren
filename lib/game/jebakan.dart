@@ -3,62 +3,27 @@ import 'package:flame/components.dart';
 import 'package:flame_svg/flame_svg.dart';
 import 'package:flutter/material.dart';
 
-import 'game_utama.dart';
-import 'player.dart';
+import 'rintangan.dart';
 
-/// Jebakan di jalan (bom, kerucut, paku, oli, batu, atau lubang), dipilih
-/// acak. Kecepatan jatuh mengikuti level saat muncul.
-class Jebakan extends PositionComponent
-    with HasGameReference<GameUtama>, CollisionCallbacks {
-  /// [x] opsional untuk menentukan posisi horizontal (dipakai di test).
-  Jebakan({this._x}) {
-    size = Vector2(40, 40);
-  }
+/// Jebakan di jalan (bom, kerucut, paku, batu, atau lubang), dipilih acak.
+/// Kecepatan jatuh mengikuti level saat muncul.
+class Jebakan extends Rintangan {
+  Jebakan({super.x}) : super(ukuran: Vector2.all(40));
 
-  final double? _x;
-  late final double _kecepatanJatuh;
+  static const _jariJari = 16.0;
+
   late final Svg _gambar;
+
+  @override
+  Rect get kotakTabrak =>
+      Rect.fromCircle(center: absoluteCenter.toOffset(), radius: _jariJari);
 
   @override
   Future<void> onLoad() async {
     final semua = game.gambar.jebakan;
     _gambar = semua[game.random.nextInt(semua.length)];
     // Hitbox 80% dari gambar supaya serempetan tipis tidak dihitung kena.
-    add(CircleHitbox(radius: size.x * 0.4, position: size * 0.1));
-  }
-
-  @override
-  void onMount() {
-    super.onMount();
-    _kecepatanJatuh = game.levelConfig.kecepatanJebakan;
-    final acakX = game.random.nextDouble() * (game.size.x - size.x);
-    position = Vector2(_x ?? acakX, -50);
-  }
-
-  @override
-  void update(double dt) {
-    super.update(dt);
-    // Semua jebakan membeku saat mobil tertabrak.
-    if (game.isGameOver) return;
-    position.y += _kecepatanJatuh * dt;
-
-    // Jebakan lolos melewati layar bawah: pemain berhasil menghindar.
-    if (position.y > game.size.y) {
-      game.jebakanDihindari();
-      removeFromParent();
-    }
-  }
-
-  @override
-  void onCollisionStart(
-    Set<Vector2> intersectionPoints,
-    PositionComponent other,
-  ) {
-    super.onCollisionStart(intersectionPoints, other);
-    if (other is Player) {
-      game.gameOver(titikTabrakan: absoluteCenter);
-      removeFromParent(); // jebakan hancur dalam ledakan
-    }
+    add(CircleHitbox(radius: _jariJari, position: size * 0.1));
   }
 
   @override
