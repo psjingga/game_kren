@@ -5,12 +5,14 @@ void main() {
   test('level 1 sama dengan game awal', () {
     final config = LevelConfig.forLevel(1);
     expect(config.kecepatanJebakan, 250);
+    expect(config.kecepatanPemain, 250);
     expect(config.jedaMunculJebakan, 1.5);
   });
 
-  test('level 2: jebakan 15% lebih cepat, jebakan lebih sering', () {
+  test('level 2: jebakan dan mobil 15% lebih cepat, jebakan lebih sering', () {
     final config = LevelConfig.forLevel(2);
     expect(config.kecepatanJebakan, closeTo(287.5, 0.001));
+    expect(config.kecepatanPemain, closeTo(287.5, 0.001));
     expect(config.jedaMunculJebakan, closeTo(1.32, 0.001));
   });
 
@@ -19,6 +21,7 @@ void main() {
     for (var level = 2; level <= 50; level++) {
       final config = LevelConfig.forLevel(level);
       expect(config.kecepatanJebakan, greaterThan(sebelumnya.kecepatanJebakan));
+      expect(config.kecepatanPemain, greaterThan(sebelumnya.kecepatanPemain));
       sebelumnya = config;
     }
   });

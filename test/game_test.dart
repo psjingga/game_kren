@@ -7,17 +7,33 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:game_kren_kamu/game/efek_crash.dart';
 import 'package:game_kren_kamu/game/game_utama.dart';
+import 'package:game_kren_kamu/game/garis_finish.dart';
 import 'package:game_kren_kamu/game/level_config.dart';
+import 'package:game_kren_kamu/game/overlays.dart';
+import 'package:game_kren_kamu/game/jam.dart';
 import 'package:game_kren_kamu/game/jebakan.dart';
+import 'package:game_kren_kamu/game/koin.dart';
+import 'package:game_kren_kamu/game/penyimpanan.dart';
 import 'package:game_kren_kamu/game/player.dart';
 import 'package:game_kren_kamu/layar_game.dart';
 
 /// Game dengan random tetap dan overlay terdaftar (tanpa GameWidget, Flame
 /// menolak membuka overlay yang belum punya builder).
-GameUtama _buatGame() {
-  final game = GameUtama(random: Random(1));
+GameUtama _buatGame({
+  Penyimpanan? penyimpanan,
+  bool mulaiDiMenu = false,
+  VoidCallback? onGameOver,
+}) {
+  final game = GameUtama(
+    random: Random(1),
+    penyimpanan: penyimpanan,
+    mulaiDiMenu: mulaiDiMenu,
+    onGameOver: onGameOver,
+  );
   for (final nama in [
+    GameUtama.overlayMenu,
     GameUtama.overlayHud,
+    GameUtama.overlayJeda,
     GameUtama.overlayLevelSelesai,
     GameUtama.overlayGameOver,
   ]) {
@@ -26,11 +42,29 @@ GameUtama _buatGame() {
   return game;
 }
 
+/// Mobil tertabrak dan layar Game Over sudah muncul.
+Future<void> _tabrakSampaiGameOver(GameUtama game) async {
+  game.gameOver();
+  await game.ready();
+  game.update(GameUtama.jedaGameOver + 0.1);
+  await game.ready();
+}
+
 Iterable<Jebakan> _jebakan(GameUtama game) =>
     game.children.whereType<Jebakan>();
 
 /// Melompati waktu sampai level selesai.
-void _selesaikanLevel(GameUtama game) => game.update(LevelConfig.durasiLevel);
+/// Melompati waktu sampai level selesai: waktu habis, lalu mobil melewati
+/// garis finish. Jebakan dibuang dulu supaya mobil pasti selamat.
+Future<void> _selesaikanLevel(GameUtama game) async {
+  game.update(LevelConfig.durasiLevel);
+  await game.ready();
+  game.removeAll(_jebakan(game));
+  await game.ready();
+  for (var i = 0; i < 100 && !game.menungguLanjut; i++) {
+    game.update(0.1);
+  }
+}
 
 Player _player(GameUtama game) => game.children.whereType<Player>().single;
 
@@ -56,7 +90,10 @@ void main() {
     final player = await _playerSiap(game);
     expect(
       player.position,
-      Vector2(game.size.x / 2 - player.size.x / 2, game.size.y - 120),
+      Vector2(
+        game.size.x / 2 - player.size.x / 2,
+        game.size.y - Player.jarakDariBawah,
+      ),
     );
   });
 
@@ -94,17 +131,41 @@ void main() {
   );
 
   testWithGame<GameUtama>(
-    'level selesai setelah ${LevelConfig.durasiLevel.toInt()} detik: game '
-    'berhenti dan menunggu tombol lanjut',
+    'setelah ${LevelConfig.durasiLevel.toInt()} detik garis finish muncul; '
+    'level selesai saat mobil melewatinya',
     _buatGame,
     (game) async {
+      final player = await _playerSiap(game);
       expect(game.sisaDetik.value, LevelConfig.durasiLevel.toInt());
 
       game.update(LevelConfig.durasiLevel - 1);
-      expect(game.menungguLanjut, isFalse);
+      expect(game.menujuFinish, isFalse);
       expect(game.sisaDetik.value, 1);
 
+      // Waktu habis: garis finish muncul di atas, belum selesai.
       game.update(1);
+      await game.ready();
+      game.removeAll(_jebakan(game));
+      await game.ready();
+      expect(game.menujuFinish, isTrue);
+      expect(game.menungguLanjut, isFalse);
+      final garis = game.children.whereType<GarisFinish>().single;
+      expect(garis.position.y, lessThan(0));
+
+      // Tidak ada jebakan baru selama menuju finish.
+      game.update(1);
+      await game.ready();
+      expect(_jebakan(game), isEmpty);
+
+      // Garis finish turun sampai dilewati mobil.
+      while (!game.menungguLanjut) {
+        game.update(0.05);
+      }
+      expect(
+        garis.position.y + garis.size.y,
+        greaterThanOrEqualTo(player.position.y),
+      );
+      expect(game.menujuFinish, isFalse);
       expect(game.menungguLanjut, isTrue);
       expect(game.paused, isTrue);
       expect(game.sisaDetik.value, 0);
@@ -134,7 +195,7 @@ void main() {
     'lanjut level menaikkan level, mengulang waktu, dan membersihkan layar',
     _buatGame,
     (game) async {
-      _selesaikanLevel(game);
+      await _selesaikanLevel(game);
       await game.ready();
       final skor = game.skor.value;
 
@@ -156,7 +217,7 @@ void main() {
     'jebakan baru di level 2 jatuh lebih cepat',
     _buatGame,
     (game) async {
-      _selesaikanLevel(game);
+      await _selesaikanLevel(game);
       game.lanjutLevel();
 
       final jebakan = Jebakan(x: 0);
@@ -169,14 +230,57 @@ void main() {
     },
   );
 
-  testWithGame<GameUtama>('mobil tidak bisa digeser keluar jalan', _buatGame, (
+  testWithGame<GameUtama>(
+    'mobil bergerak selama tombol ditahan dan berhenti saat dilepas',
+    _buatGame,
+    (game) async {
+      final player = await _playerSiap(game);
+      final xAwal = player.position.x;
+
+      game.tekanKanan(ditekan: true);
+      game.update(0.1);
+      expect(player.position.x, closeTo(xAwal + 25, 0.001));
+
+      game.tekanKanan(ditekan: false);
+      game.update(0.1);
+      expect(player.position.x, closeTo(xAwal + 25, 0.001));
+
+      game.tekanKiri(ditekan: true);
+      game.update(0.1);
+      expect(player.position.x, closeTo(xAwal, 0.001));
+
+      // Kedua tombol ditekan: saling meniadakan.
+      game.tekanKanan(ditekan: true);
+      game.update(0.1);
+      expect(player.position.x, closeTo(xAwal, 0.001));
+    },
+  );
+
+  testWithGame<GameUtama>('mobil tidak bisa keluar jalan', _buatGame, (
     game,
   ) async {
     final player = await _playerSiap(game);
-    player.geser(-1000);
+    game.tekanKiri(ditekan: true);
+    game.update(10);
     expect(player.position.x, 0);
-    player.geser(1000);
+
+    game.tekanKiri(ditekan: false);
+    game.tekanKanan(ditekan: true);
+    game.update(10);
     expect(player.position.x, game.size.x - player.size.x);
+  });
+
+  testWithGame<GameUtama>('mobil di level 2 bergerak lebih cepat', _buatGame, (
+    game,
+  ) async {
+    final player = await _playerSiap(game);
+    await _selesaikanLevel(game);
+    game.lanjutLevel();
+
+    final xAwal = player.position.x;
+    game.tekanKanan(ditekan: true);
+    game.update(0.1);
+    expect(player.position.x - xAwal, closeTo(28.75, 0.001));
   });
 
   testWithGame<GameUtama>(
@@ -205,7 +309,7 @@ void main() {
       // Selama efek berjalan, jebakan lain membeku dan mobil tidak bisa
       // digerakkan.
       final xMobil = player.position.x;
-      player.geser(50);
+      game.tekanKanan(ditekan: true);
       game.update(GameUtama.jedaGameOver / 2);
       expect(jebakanLain.position.y, yJebakanLain);
       expect(player.position.x, closeTo(xMobil, 6.01)); // hanya guncangan
@@ -223,15 +327,7 @@ void main() {
     'onGameOver dipanggil sekali saat layar Game Over muncul',
     () {
       gameOverDipanggil = 0;
-      final game = GameUtama(
-        random: Random(1),
-        onGameOver: () => gameOverDipanggil++,
-      );
-      game.overlays.addEntry(
-        GameUtama.overlayGameOver,
-        (_, _) => const SizedBox(),
-      );
-      return game;
+      return _buatGame(onGameOver: () => gameOverDipanggil++);
     },
     (game) async {
       await _playerSiap(game);
@@ -273,40 +369,327 @@ void main() {
     expect(game.overlays.isActive(GameUtama.overlayGameOver), isFalse);
   });
 
-  testWidgets('mobil mengikuti geseran jari ke kanan dan ke kiri', (
+  testWidgets('menahan tombol ▶ lalu ◀ di layar menggerakkan mobil', (
     tester,
   ) async {
     final game = _buatGame();
     await tester.pumpWidget(
-      Center(
-        child: SizedBox(width: 400, height: 800, child: GameWidget(game: game)),
+      MaterialApp(
+        home: SizedBox(
+          width: 400,
+          height: 800,
+          child: GameWidget<GameUtama>(
+            game: game,
+            initialActiveOverlays: const [GameUtama.overlayHud],
+            overlayBuilderMap: {
+              GameUtama.overlayHud: (_, game) => HudOverlay(game: game),
+            },
+          ),
+        ),
       ),
     );
     await _tungguGambar(tester, game);
 
     final player = _player(game);
     final xAwal = player.position.x;
-    final kotak = tester.getRect(find.byType(GameWidget<GameUtama>));
 
-    // Jari di bagian atas layar, jauh dari mobil: mobil tetap ikut.
-    await tester.timedDragFrom(
-      kotak.center - const Offset(0, 200),
-      const Offset(100, 0),
-      const Duration(milliseconds: 300),
-    );
-    await tester.pump();
-    expect(player.position.x, closeTo(xAwal + 100, 1));
+    Future<void> tahan(String label) async {
+      final jari = await tester.startGesture(
+        tester.getCenter(find.bySemanticsLabel(label)),
+      );
+      for (var i = 0; i < 10; i++) {
+        await tester.pump(const Duration(milliseconds: 16));
+      }
+      await jari.up();
+      await tester.pump();
+    }
 
-    await tester.timedDragFrom(
-      kotak.center,
-      const Offset(-150, 0),
-      const Duration(milliseconds: 300),
-    );
-    await tester.pump();
-    expect(player.position.x, closeTo(xAwal - 50, 1));
+    await tahan('Kanan');
+    final xSetelahKanan = player.position.x;
+    expect(xSetelahKanan, greaterThan(xAwal));
+
+    // Tombol sudah dilepas: mobil diam.
+    for (var i = 0; i < 5; i++) {
+      await tester.pump(const Duration(milliseconds: 16));
+    }
+    expect(player.position.x, xSetelahKanan);
+
+    await tahan('Kiri');
+    expect(player.position.x, lessThan(xSetelahKanan));
   });
 
-  testWidgets('LayarGame menampilkan level dan skor', (tester) async {
+  testWithGame<GameUtama>(
+    'koin yang kena mobil menambah jumlah koin',
+    _buatGame,
+    (game) async {
+      final player = await _playerSiap(game);
+      final koin = Koin(x: player.position.x + 10);
+      await game.add(koin);
+      await game.ready();
+      koin.position.y = player.position.y + 10;
+
+      game.update(0.016);
+      await game.ready();
+
+      expect(game.koin.value, 1);
+      expect(koin.isMounted, isFalse);
+      expect(game.isGameOver, isFalse, reason: 'koin bukan jebakan');
+    },
+  );
+
+  testWithGame<GameUtama>('koin muncul berkala di jalan', _buatGame, (
+    game,
+  ) async {
+    game.update(GameUtama.jedaMunculKoin + 0.05);
+    await game.ready();
+    expect(game.children.whereType<Koin>(), hasLength(1));
+  });
+
+  testWithGame<GameUtama>(
+    'jam yang kena mobil memotong sisa waktu level',
+    _buatGame,
+    (game) async {
+      final player = await _playerSiap(game);
+      game.update(2);
+      expect(game.sisaDetik.value, 28);
+
+      final jam = Jam(x: player.position.x + 10);
+      await game.add(jam);
+      await game.ready();
+      jam.position.y = player.position.y + 10;
+      game.update(0.016);
+      await game.ready();
+
+      expect(jam.isMounted, isFalse);
+      expect(game.sisaDetik.value, 25);
+      expect(game.children.whereType<TeksMelayang>(), hasLength(1));
+      expect(game.koin.value, 0, reason: 'jam bukan koin');
+      expect(game.isGameOver, isFalse);
+    },
+  );
+
+  testWithGame<GameUtama>(
+    'jam di detik terakhir langsung memunculkan garis finish',
+    _buatGame,
+    (game) async {
+      await _playerSiap(game);
+      game.update(LevelConfig.durasiLevel - 2);
+
+      game.ambilJam();
+      expect(game.sisaDetik.value, 0);
+      game.update(0.016);
+      await game.ready();
+
+      expect(game.menujuFinish, isTrue);
+      expect(game.children.whereType<GarisFinish>(), hasLength(1));
+    },
+  );
+
+  testWithGame<GameUtama>(
+    'tertabrak saat menuju finish lalu lanjut lewat iklan: garis finish tetap',
+    _buatGame,
+    (game) async {
+      await _playerSiap(game);
+      game.update(LevelConfig.durasiLevel);
+      await game.ready();
+      expect(game.menujuFinish, isTrue);
+
+      await _tabrakSampaiGameOver(game);
+      game.lanjutSetelahIklan();
+      await game.ready();
+
+      expect(game.menujuFinish, isTrue);
+      expect(game.children.whereType<GarisFinish>(), hasLength(1));
+      for (var i = 0; i < 100 && !game.menungguLanjut; i++) {
+        game.update(0.1);
+      }
+      expect(game.menungguLanjut, isTrue);
+    },
+  );
+
+  testWithGame<GameUtama>(
+    'lanjut level membuang garis finish lama',
+    _buatGame,
+    (game) async {
+      await _playerSiap(game);
+      await _selesaikanLevel(game);
+      game.lanjutLevel();
+      await game.ready();
+      expect(game.children.whereType<GarisFinish>(), isEmpty);
+      expect(game.menujuFinish, isFalse);
+    },
+  );
+
+  testWithGame<GameUtama>('jam muncul lebih jarang dari koin', _buatGame, (
+    game,
+  ) async {
+    for (var i = 0; i < 52; i++) {
+      game.update(0.1);
+    }
+    await game.ready();
+    expect(game.children.whereType<Jam>(), hasLength(1));
+  });
+
+  testWithGame<GameUtama>(
+    'game over menyimpan rekor dan koin ke penyimpanan',
+    () => _buatGame(penyimpanan: PenyimpananMemori(rekor: 3, totalKoin: 10)),
+    (game) async {
+      await _playerSiap(game);
+      expect(game.rekor.value, 3);
+
+      for (var i = 0; i < 5; i++) {
+        game.jebakanDihindari();
+      }
+      game.ambilKoin();
+      game.ambilKoin();
+      await _tabrakSampaiGameOver(game);
+
+      expect(game.rekor.value, 5);
+      expect(game.rekorBaru, isTrue);
+      expect(game.totalKoin.value, 12);
+
+      // Permainan berikutnya dengan skor lebih rendah: rekor tetap.
+      game.mainLagi();
+      game.jebakanDihindari();
+      await _tabrakSampaiGameOver(game);
+      expect(game.rekor.value, 5);
+      expect(game.rekorBaru, isFalse);
+      expect(game.totalKoin.value, 12);
+    },
+  );
+
+  test('rekor dan koin terbaca lagi dari penyimpanan', () async {
+    final penyimpanan = PenyimpananMemori();
+    await penyimpanan.simpan(rekor: 7, totalKoin: 20);
+    final game = GameUtama(penyimpanan: penyimpanan);
+    expect(game.rekor.value, 7);
+    expect(game.totalKoin.value, 20);
+  });
+
+  testWithGame<GameUtama>(
+    'lanjut setelah iklan: permainan diteruskan sekali saja',
+    _buatGame,
+    (game) async {
+      final player = await _playerSiap(game);
+      for (var i = 0; i < 4; i++) {
+        game.jebakanDihindari();
+      }
+      game.ambilKoin();
+      game.update(5);
+      await game.add(Jebakan(x: 0));
+      await game.ready();
+      await _tabrakSampaiGameOver(game);
+      final sisaDetik = game.sisaDetik.value;
+
+      game.lanjutSetelahIklan();
+      await game.ready();
+
+      expect(game.isGameOver, isFalse);
+      expect(player.terbakar, isFalse);
+      expect(game.skor.value, 4, reason: 'skor tidak hilang');
+      expect(game.koin.value, 1);
+      expect(game.sisaDetik.value, sisaDetik);
+      expect(_jebakan(game), isEmpty, reason: 'jalan dibersihkan');
+      expect(game.overlays.isActive(GameUtama.overlayGameOver), isFalse);
+      expect(game.bisaLanjutDenganIklan, isFalse);
+
+      // Tabrakan kedua: tidak bisa lanjut lagi.
+      await _tabrakSampaiGameOver(game);
+      game.lanjutSetelahIklan();
+      expect(game.isGameOver, isTrue);
+
+      // Main lagi: kesempatan lanjut kembali tersedia.
+      game.mainLagi();
+      expect(game.bisaLanjutDenganIklan, isTrue);
+    },
+  );
+
+  testWithGame<GameUtama>(
+    'jeda menghentikan game dan mobil, lalu bisa dilanjutkan',
+    _buatGame,
+    (game) async {
+      final player = await _playerSiap(game);
+      game.jeda();
+      expect(game.dijeda, isTrue);
+      expect(game.paused, isTrue);
+      expect(game.overlays.isActive(GameUtama.overlayJeda), isTrue);
+
+      game.lanjutkanJeda();
+      expect(game.dijeda, isFalse);
+      expect(game.paused, isFalse);
+      expect(game.overlays.isActive(GameUtama.overlayJeda), isFalse);
+
+      // Tombol yang tertahan saat jeda dilepas, mobil tidak jalan sendiri.
+      game.tekanKanan(ditekan: true);
+      game.jeda();
+      game.lanjutkanJeda();
+      final x = player.position.x;
+      game.update(0.5);
+      expect(player.position.x, x);
+    },
+  );
+
+  testWithGame<GameUtama>(
+    'aplikasi ditinggal saat bermain: jeda otomatis dan tetap jeda saat kembali',
+    _buatGame,
+    (game) async {
+      await _playerSiap(game);
+      game.lifecycleStateChange(AppLifecycleState.inactive);
+      game.lifecycleStateChange(AppLifecycleState.hidden);
+      game.lifecycleStateChange(AppLifecycleState.paused);
+      expect(game.dijeda, isTrue);
+
+      game.lifecycleStateChange(AppLifecycleState.hidden);
+      game.lifecycleStateChange(AppLifecycleState.inactive);
+      game.lifecycleStateChange(AppLifecycleState.resumed);
+      expect(game.dijeda, isTrue);
+      expect(game.paused, isTrue, reason: 'menunggu tombol Lanjut');
+    },
+  );
+
+  testWithGame<GameUtama>(
+    'game dimulai dari menu: belum ada jebakan atau waktu berjalan',
+    () => _buatGame(mulaiDiMenu: true),
+    (game) async {
+      await _playerSiap(game);
+      game.update(5);
+      await game.ready();
+      expect(game.diMenu, isTrue);
+      expect(_jebakan(game), isEmpty);
+      expect(game.sisaDetik.value, LevelConfig.durasiLevel.toInt());
+
+      game.mulai();
+      expect(game.diMenu, isFalse);
+      expect(game.overlays.isActive(GameUtama.overlayHud), isTrue);
+      game.update(5);
+      expect(game.sisaDetik.value, LevelConfig.durasiLevel.toInt() - 5);
+    },
+  );
+
+  testWithGame<GameUtama>(
+    'kembali ke menu dari jeda menyimpan koin dan mengulang permainan',
+    _buatGame,
+    (game) async {
+      await _playerSiap(game);
+      game.jebakanDihindari();
+      game.ambilKoin();
+      game.jeda();
+
+      game.kembaliKeMenu();
+
+      expect(game.diMenu, isTrue);
+      expect(game.paused, isFalse, reason: 'jalan tetap bergerak di menu');
+      expect(game.totalKoin.value, 1);
+      expect(game.rekor.value, 1);
+      expect(game.skor.value, 0);
+      expect(game.overlays.isActive(GameUtama.overlayMenu), isTrue);
+      expect(game.overlays.isActive(GameUtama.overlayJeda), isFalse);
+    },
+  );
+
+  testWidgets('LayarGame dimulai dari menu, tombol MAIN memulai permainan', (
+    tester,
+  ) async {
     await tester.pumpWidget(const MaterialApp(home: LayarGame(showAds: false)));
     // Pemuatan gambar butuh async sungguhan, bukan waktu palsu testWidgets.
     await tester.runAsync(
@@ -315,7 +698,13 @@ void main() {
     await tester.pump();
     await tester.pump();
 
-    expect(find.byType(GameWidget<GameUtama>), findsOneWidget);
+    expect(find.text('KREN KAMU'), findsOneWidget);
+    expect(find.text('Rekor 0'), findsOneWidget);
+
+    await tester.tap(find.text('MAIN'));
+    await tester.pump();
+
+    expect(find.text('KREN KAMU'), findsNothing);
     expect(find.text('Level 1'), findsOneWidget);
     expect(find.text('Skor 0'), findsOneWidget);
   });

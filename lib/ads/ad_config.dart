@@ -19,6 +19,10 @@ abstract class AdConfig {
   static const _interstitialAndroidAsli = '';
   static const _interstitialIosAsli = '';
 
+  // TODO: isi dengan ID unit iklan berhadiah (rewarded) asli dari AdMob.
+  static const _rewardedAndroidAsli = '';
+  static const _rewardedIosAsli = '';
+
   static const _bannerAndroidTest = 'ca-app-pub-3940256099942544/6300978111';
   static const _bannerIosTest = 'ca-app-pub-3940256099942544/2934735716';
 
@@ -27,9 +31,13 @@ abstract class AdConfig {
       'ca-app-pub-3940256099942544/8691691433';
   static const _interstitialIosTest = 'ca-app-pub-3940256099942544/5135589807';
 
+  static const _rewardedAndroidTest = 'ca-app-pub-3940256099942544/5224354917';
+  static const _rewardedIosTest = 'ca-app-pub-3940256099942544/1712485313';
+
   /// Iklan layar penuh muncul setiap kali game over ke-N. `1` = setiap game
-  /// over; naikkan supaya pemain tidak terlalu sering terganggu.
-  static const interstitialSetiapGameOver = 1;
+  /// over. Dibuat jarang karena pemain sudah bisa memilih iklan berhadiah
+  /// untuk lanjut main.
+  static const interstitialSetiapGameOver = 3;
 
   /// ID perangkat yang selalu menerima iklan test walaupun memakai ID asli.
   /// ID muncul di log saat aplikasi jalan di HP, cari teks "test device".
@@ -59,4 +67,14 @@ abstract class AdConfig {
 
   static bool get isInterstitialEnabled =>
       isSupportedPlatform && interstitialAdUnitId.isNotEmpty;
+
+  static String get rewardedAdUnitId {
+    if (!kReleaseMode) {
+      return Platform.isAndroid ? _rewardedAndroidTest : _rewardedIosTest;
+    }
+    return Platform.isAndroid ? _rewardedAndroidAsli : _rewardedIosAsli;
+  }
+
+  static bool get isRewardedEnabled =>
+      isSupportedPlatform && rewardedAdUnitId.isNotEmpty;
 }

@@ -4,6 +4,7 @@ import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:game_kren_kamu/game/game_utama.dart';
+import 'package:game_kren_kamu/game/jebakan.dart';
 import 'package:game_kren_kamu/game/level_config.dart';
 import 'package:game_kren_kamu/game/level_selesai_overlay.dart';
 
@@ -29,7 +30,13 @@ void main() {
     });
     await tester.pump();
 
+    // Waktu habis, lalu mobil melewati garis finish (jebakan dibuang supaya
+    // mobil pasti selamat).
     game.update(LevelConfig.durasiLevel);
+    game.removeAll(game.children.whereType<Jebakan>());
+    for (var i = 0; i < 100 && !game.menungguLanjut; i++) {
+      game.update(0.1);
+    }
     await tester.pump();
     expect(find.text('LEVEL 1 SELESAI!'), findsOneWidget);
 

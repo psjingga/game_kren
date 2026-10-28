@@ -42,16 +42,16 @@ class Player extends PositionComponent with HasGameReference<GameUtama> {
     keTengah();
   }
 
-  /// Menggeser mobil ke samping sejauh [dx] (mengikuti gerak jari),
-  /// tidak keluar dari tepi jalan.
-  void geser(double dx) {
-    if (_terbakar) return;
-    position.x = (position.x + dx).clamp(0, game.size.x - size.x);
-  }
+  /// Jarak dari atas mobil ke bawah layar. Cukup tinggi supaya mobil tidak
+  /// tertutup tombol ◀ ▶.
+  static const jarakDariBawah = 200.0;
 
   /// Kembali ke posisi awal (tengah bawah).
   void keTengah() {
-    position = Vector2((game.size.x / 2) - (size.x / 2), game.size.y - 120);
+    position = Vector2(
+      (game.size.x / 2) - (size.x / 2),
+      game.size.y - jarakDariBawah,
+    );
   }
 
   /// Mobil tertabrak: berhenti, terguncang, gosong, lalu terbakar.
@@ -67,6 +67,14 @@ class Player extends PositionComponent with HasGameReference<GameUtama> {
       ),
     );
     add(ApiTerbakar(lebar: size.x, random: game.random));
+  }
+
+  @override
+  void update(double dt) {
+    super.update(dt);
+    if (_terbakar) return;
+    position.x += game.arahMobil * game.levelConfig.kecepatanPemain * dt;
+    position.x = position.x.clamp(0, game.size.x - size.x);
   }
 
   /// Hapus efek terbakar untuk permainan baru.
