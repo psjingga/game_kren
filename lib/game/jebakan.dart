@@ -1,30 +1,36 @@
 import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
+import 'package:flame_svg/flame_svg.dart';
 import 'package:flutter/material.dart';
 
 import 'game_utama.dart';
 import 'player.dart';
 
-/// Meteor (lingkaran merah). Kecepatan jatuh mengikuti level saat muncul.
-class Meteor extends PositionComponent
+/// Jebakan di jalan (bom, kerucut, paku, oli, batu, atau lubang), dipilih
+/// acak. Kecepatan jatuh mengikuti level saat muncul.
+class Jebakan extends PositionComponent
     with HasGameReference<GameUtama>, CollisionCallbacks {
   /// [x] opsional untuk menentukan posisi horizontal (dipakai di test).
-  Meteor({this._x}) {
+  Jebakan({this._x}) {
     size = Vector2(40, 40);
   }
 
   final double? _x;
   late final double _kecepatanJatuh;
+  late final Svg _gambar;
 
   @override
   Future<void> onLoad() async {
-    add(CircleHitbox());
+    final semua = game.gambar.jebakan;
+    _gambar = semua[game.random.nextInt(semua.length)];
+    // Hitbox 80% dari gambar supaya serempetan tipis tidak dihitung kena.
+    add(CircleHitbox(radius: size.x * 0.4, position: size * 0.1));
   }
 
   @override
   void onMount() {
     super.onMount();
-    _kecepatanJatuh = game.levelConfig.kecepatanMeteor;
+    _kecepatanJatuh = game.levelConfig.kecepatanJebakan;
     final acakX = game.random.nextDouble() * (game.size.x - size.x);
     position = Vector2(_x ?? acakX, -50);
   }
@@ -32,11 +38,13 @@ class Meteor extends PositionComponent
   @override
   void update(double dt) {
     super.update(dt);
+    // Semua jebakan membeku saat mobil tertabrak.
+    if (game.isGameOver) return;
     position.y += _kecepatanJatuh * dt;
 
-    // Meteor lolos melewati layar bawah: pemain berhasil menghindar.
+    // Jebakan lolos melewati layar bawah: pemain berhasil menghindar.
     if (position.y > game.size.y) {
-      game.meteorDihindari();
+      game.jebakanDihindari();
       removeFromParent();
     }
   }
@@ -47,16 +55,12 @@ class Meteor extends PositionComponent
     PositionComponent other,
   ) {
     super.onCollisionStart(intersectionPoints, other);
-    if (other is Player) game.gameOver();
+    if (other is Player) {
+      game.gameOver(titikTabrakan: absoluteCenter);
+      removeFromParent(); // jebakan hancur dalam ledakan
+    }
   }
 
   @override
-  void render(Canvas canvas) {
-    super.render(canvas);
-    canvas.drawCircle(
-      Offset(size.x / 2, size.y / 2),
-      size.x / 2,
-      Paint()..color = Colors.red,
-    );
-  }
+  void render(Canvas canvas) => _gambar.render(canvas, size);
 }

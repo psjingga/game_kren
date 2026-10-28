@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" width="40" height="40">
+  <!-- Batu besar -->
+  <path d="M8 12 L18 4 L31 6 L38 18 L35 32 L22 38 L8 35 L2 23 Z" fill="#795548"/>
+  <path d="M18 4 L31 6 L38 18 L26 16 Z" fill="#a1887f"/>
+  <path d="M2 23 L8 12 L18 4 L26 16 L16 22 Z" fill="#8d6e63"/>
+  <path d="M16 22 L26 16 L38 18 L35 32 L22 38 Z" fill="#5d4037"/>
+  <path d="M12 27 L18 30 M27 24 L30 30" stroke="#3e2723" stroke-width="1.5"/>
+</svg>

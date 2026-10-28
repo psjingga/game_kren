@@ -51,7 +51,7 @@ class _LevelSelesaiOverlayState extends State<LevelSelesaiOverlay>
     final level = game.level.value;
     final berikutnya = LevelConfig.forLevel(level + 1);
     final kenaikan =
-        (berikutnya.kecepatanMeteor / game.levelConfig.kecepatanMeteor - 1) *
+        (berikutnya.kecepatanJebakan / game.levelConfig.kecepatanJebakan - 1) *
         100;
 
     return AnimatedBuilder(
@@ -115,6 +115,7 @@ class _LevelSelesaiOverlayState extends State<LevelSelesaiOverlay>
         ),
         const SizedBox(height: 8),
         Text(
+          '${game.dihindariDiLevelIni.value} jebakan dihindari • '
           'Skor ${game.skor.value}',
           style: const TextStyle(color: Colors.white70, fontSize: 18),
         ),

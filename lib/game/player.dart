@@ -1,21 +1,39 @@
 import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
+import 'package:flame/effects.dart';
 import 'package:flutter/material.dart';
 
+import 'efek_crash.dart';
 import 'game_utama.dart';
 
-/// Pemain (kotak biru).
+/// Mobil pemain, dilihat dari atas.
 class Player extends PositionComponent with HasGameReference<GameUtama> {
-  double _arah = 0; // -1 = Kiri, 1 = Kanan, 0 = Diam
-
   Player() {
-    size = Vector2(60, 60);
+    size = Vector2(52, 80);
   }
+
+  /// Warna gosong ditimpakan ke gambar mobil setelah tertabrak.
+  static const _filterGosong = ColorFilter.mode(
+    Color(0xCC2B1B12),
+    BlendMode.srcATop,
+  );
+
+  final _paint = Paint()..filterQuality = FilterQuality.medium;
+  bool _terbakar = false;
+
+  bool get terbakar => _terbakar;
 
   @override
   Future<void> onLoad() async {
-    // Solid: meteor yang sudah berada di dalam kotak tetap terhitung kena.
-    add(RectangleHitbox(isSolid: true));
+    // Hitbox sedikit lebih kecil dari gambar supaya tabrakan terasa adil.
+    // Solid: jebakan yang sudah berada di dalam mobil tetap terhitung kena.
+    add(
+      RectangleHitbox(
+        position: Vector2(6, 4),
+        size: Vector2(size.x - 12, size.y - 8),
+        isSolid: true,
+      ),
+    );
   }
 
   @override
@@ -24,27 +42,43 @@ class Player extends PositionComponent with HasGameReference<GameUtama> {
     keTengah();
   }
 
-  void bergerakKeKiri() => _arah = -1;
-  void bergerakKeKanan() => _arah = 1;
+  /// Menggeser mobil ke samping sejauh [dx] (mengikuti gerak jari),
+  /// tidak keluar dari tepi jalan.
+  void geser(double dx) {
+    if (_terbakar) return;
+    position.x = (position.x + dx).clamp(0, game.size.x - size.x);
+  }
 
-  void berhenti() => _arah = 0;
-
-  /// Kembali ke posisi awal (tengah bawah) dan berhenti.
+  /// Kembali ke posisi awal (tengah bawah).
   void keTengah() {
-    _arah = 0;
     position = Vector2((game.size.x / 2) - (size.x / 2), game.size.y - 120);
   }
 
-  @override
-  void update(double dt) {
-    super.update(dt);
-    position.x += _arah * game.levelConfig.kecepatanPemain * dt;
-    position.x = position.x.clamp(0, game.size.x - size.x);
+  /// Mobil tertabrak: berhenti, terguncang, gosong, lalu terbakar.
+  void tabrakan() {
+    if (_terbakar) return;
+    _terbakar = true;
+    _paint.colorFilter = _filterGosong;
+
+    add(
+      MoveByEffect(
+        Vector2(6, 0),
+        EffectController(duration: 0.04, reverseDuration: 0.04, repeatCount: 6),
+      ),
+    );
+    add(ApiTerbakar(lebar: size.x, random: game.random));
+  }
+
+  /// Hapus efek terbakar untuk permainan baru.
+  void pulihkan() {
+    _terbakar = false;
+    _paint.colorFilter = null;
+    removeAll(children.where((c) => c is ApiTerbakar || c is Effect));
+    keTengah();
   }
 
   @override
   void render(Canvas canvas) {
-    super.render(canvas);
-    canvas.drawRect(size.toRect(), Paint()..color = Colors.blue);
+    game.gambar.mobil.render(canvas, size, overridePaint: _paint);
   }
 }

@@ -6,8 +6,8 @@ import 'game/game_utama.dart';
 import 'game/level_selesai_overlay.dart';
 import 'game/overlays.dart';
 
-/// Game di atas, banner iklan di bawah. Area game otomatis menyesuaikan
-/// sisa layar, jadi pemain dan meteor tidak tertutup iklan.
+/// Banner iklan di atas dan di bawah, game di tengah. Area game otomatis
+/// menyesuaikan sisa layar, jadi pemain dan jebakan tidak tertutup iklan.
 class LayarGame extends StatefulWidget {
   const LayarGame({super.key, this.showAds = true});
 
@@ -26,26 +26,38 @@ class _LayarGameState extends State<LayarGame> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
-      body: Column(
-        children: [
-          Expanded(
-            // Clip supaya meteor yang lewat batas bawah tidak menimpa iklan.
-            child: ClipRect(
-              child: GameWidget<GameUtama>(
-                game: _game,
-                initialActiveOverlays: const [GameUtama.overlayHud],
-                overlayBuilderMap: {
-                  GameUtama.overlayHud: (_, game) => HudOverlay(game: game),
-                  GameUtama.overlayLevelSelesai: (_, game) =>
-                      LevelSelesaiOverlay(game: game),
-                  GameUtama.overlayGameOver: (_, game) =>
-                      GameOverOverlay(game: game),
-                },
+      // SafeArea di luar supaya iklan atas tidak tertutup status bar dan HUD
+      // tidak menambah jarak status bar lagi.
+      body: SafeArea(
+        child: Column(
+          children: [
+            if (widget.showAds) const BannerAdSlot(),
+            Expanded(
+              // Clip supaya jebakan yang lewat batas layar tidak menimpa iklan.
+              child: ClipRect(
+                child: GameWidget<GameUtama>(
+                  game: _game,
+                  initialActiveOverlays: const [GameUtama.overlayHud],
+                  // Tampil selama gambar mobil & jebakan dimuat.
+                  loadingBuilder: (_) => const ColoredBox(
+                    color: Color(0xFF4A4A4F),
+                    child: Center(
+                      child: CircularProgressIndicator(color: Colors.white),
+                    ),
+                  ),
+                  overlayBuilderMap: {
+                    GameUtama.overlayHud: (_, game) => HudOverlay(game: game),
+                    GameUtama.overlayLevelSelesai: (_, game) =>
+                        LevelSelesaiOverlay(game: game),
+                    GameUtama.overlayGameOver: (_, game) =>
+                        GameOverOverlay(game: game),
+                  },
+                ),
               ),
             ),
-          ),
-          if (widget.showAds) const BannerAdSlot(),
-        ],
+            if (widget.showAds) const BannerAdSlot(),
+          ],
+        ),
       ),
     );
   }

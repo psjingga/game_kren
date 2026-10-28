@@ -1,20 +1,28 @@
 import 'dart:math';
 
+import 'package:flame/components.dart';
 import 'package:flame/events.dart';
 import 'package:flame/game.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 
+import 'efek_crash.dart';
+import 'gambar_game.dart';
+import 'jalan.dart';
+import 'jebakan.dart';
 import 'level_config.dart';
-import 'meteor.dart';
 import 'player.dart';
 
-/// Mengatur dunia game: munculnya meteor, skor, level, dan game over.
-class GameUtama extends FlameGame with TapCallbacks, HasCollisionDetection {
+/// Mengatur dunia game: munculnya jebakan, skor, level, dan game over.
+class GameUtama extends FlameGame with DragCallbacks, HasCollisionDetection {
   GameUtama({Random? random}) : random = random ?? Random();
 
   static const overlayHud = 'hud';
   static const overlayLevelSelesai = 'levelSelesai';
   static const overlayGameOver = 'gameOver';
+
+  /// Lama efek tabrakan & terbakar sebelum layar Game Over muncul (detik).
+  static const jedaGameOver = 1.2;
 
   final Random random;
 
@@ -23,8 +31,13 @@ class GameUtama extends FlameGame with TapCallbacks, HasCollisionDetection {
   final skor = ValueNotifier<int>(0);
   final dihindariDiLevelIni = ValueNotifier<int>(0);
 
+  /// Sisa waktu level dalam detik (dibulatkan ke atas) untuk HUD.
+  final sisaDetik = ValueNotifier<int>(LevelConfig.durasiLevel.ceil());
+
+  late final GambarGame gambar;
   late Player _player;
-  double _waktuMunculMeteor = 0;
+  double _waktuMunculJebakan = 0;
+  double _waktuLevel = 0;
   bool _isGameOver = false;
   bool _menungguLanjut = false;
 
@@ -39,6 +52,8 @@ class GameUtama extends FlameGame with TapCallbacks, HasCollisionDetection {
 
   @override
   Future<void> onLoad() async {
+    gambar = await GambarGame.muat();
+    add(Jalan());
     _player = Player();
     add(_player);
   }
@@ -48,37 +63,42 @@ class GameUtama extends FlameGame with TapCallbacks, HasCollisionDetection {
     super.update(dt);
     if (!_sedangBermain) return;
 
-    _waktuMunculMeteor += dt;
-    if (_waktuMunculMeteor > levelConfig.jedaMunculMeteor) {
-      add(Meteor());
-      _waktuMunculMeteor = 0;
+    _waktuLevel += dt;
+    final sisa = LevelConfig.durasiLevel - _waktuLevel;
+    sisaDetik.value = max(sisa, 0).ceil();
+    if (sisa <= 0) {
+      _levelSelesai();
+      return;
+    }
+
+    _waktuMunculJebakan += dt;
+    if (_waktuMunculJebakan > levelConfig.jedaMunculJebakan) {
+      add(Jebakan());
+      _waktuMunculJebakan = 0;
     }
   }
 
+  /// Mobil mengikuti gerak jari ke kiri/kanan. Jari bisa diletakkan di mana
+  /// saja di layar, jadi mobil tidak tertutup jari.
   @override
-  void onTapDown(TapDownEvent event) {
+  void onDragUpdate(DragUpdateEvent event) {
+    super.onDragUpdate(event);
     if (!_sedangBermain) return;
-    final lokasiKlikX = event.canvasPosition.x;
-
-    // Klik layar kiri = ke kiri, klik layar kanan = ke kanan
-    if (lokasiKlikX < size.x / 2) {
-      _player.bergerakKeKiri();
-    } else {
-      _player.bergerakKeKanan();
-    }
+    _player.geser(event.localDelta.x);
   }
 
-  /// Dipanggil oleh [Meteor] saat lolos melewati layar bawah.
-  void meteorDihindari() {
+  /// Dipanggil oleh [Jebakan] saat lolos melewati layar bawah.
+  void jebakanDihindari() {
     if (!_sedangBermain) return;
     skor.value++;
     dihindariDiLevelIni.value++;
+  }
 
-    if (dihindariDiLevelIni.value >= LevelConfig.meteorPerLevel) {
-      _menungguLanjut = true;
-      overlays.add(overlayLevelSelesai);
-      pauseEngine();
-    }
+  /// Waktu level habis dan pemain masih selamat.
+  void _levelSelesai() {
+    _menungguLanjut = true;
+    overlays.add(overlayLevelSelesai);
+    pauseEngine();
   }
 
   /// Dipanggil dari tombol "Lanjut" di layar Level Selesai.
@@ -91,19 +111,32 @@ class GameUtama extends FlameGame with TapCallbacks, HasCollisionDetection {
     resumeEngine();
   }
 
-  /// Dipanggil oleh [Meteor] saat mengenai pemain.
-  void gameOver() {
+  /// Dipanggil oleh [Jebakan] saat mengenai pemain.
+  ///
+  /// Mobil meledak dan terbakar dulu; layar Game Over muncul setelah
+  /// [jedaGameOver] detik. Game tidak di-pause supaya api tetap menyala.
+  void gameOver({Vector2? titikTabrakan}) {
     if (!_sedangBermain) return;
     _isGameOver = true;
-    overlays.add(overlayGameOver);
-    pauseEngine();
+
+    _player.tabrakan();
+    add(buatLedakan(titikTabrakan ?? _player.center, random));
+    HapticFeedback.heavyImpact();
+    add(
+      TimerComponent(
+        period: jedaGameOver,
+        removeOnFinish: true,
+        onTick: () => overlays.add(overlayGameOver),
+      ),
+    );
   }
 
   void mainLagi() {
     level.value = 1;
     skor.value = 0;
     _mulaiLevel();
-    _player.keTengah();
+    removeAll(children.whereType<ParticleSystemComponent>());
+    _player.pulihkan();
     _isGameOver = false;
     _menungguLanjut = false;
 
@@ -113,12 +146,13 @@ class GameUtama extends FlameGame with TapCallbacks, HasCollisionDetection {
     resumeEngine();
   }
 
-  /// Layar bersih untuk level baru: meteor lama dihapus dan pemain berhenti.
+  /// Layar bersih untuk level baru: jebakan lama dihapus.
   void _mulaiLevel() {
-    removeAll(children.whereType<Meteor>());
-    _player.berhenti();
+    removeAll(children.whereType<Jebakan>());
     dihindariDiLevelIni.value = 0;
-    _waktuMunculMeteor = 0;
+    _waktuMunculJebakan = 0;
+    _waktuLevel = 0;
+    sisaDetik.value = LevelConfig.durasiLevel.ceil();
   }
 
   @override
@@ -126,6 +160,7 @@ class GameUtama extends FlameGame with TapCallbacks, HasCollisionDetection {
     level.dispose();
     skor.dispose();
     dihindariDiLevelIni.dispose();
+    sisaDetik.dispose();
     super.onRemove();
   }
 }

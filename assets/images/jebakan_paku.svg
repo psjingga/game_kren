@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" width="40" height="40">
+  <!-- Ranjau paku -->
+  <rect x="1" y="24" width="38" height="12" rx="3" fill="#455a64"/>
+  <rect x="1" y="30" width="38" height="3" fill="#ffc107"/>
+  <path d="M3 24 L7 6 L11 24 Z M11 24 L15 4 L19 24 Z M19 24 L23 6 L27 24 Z M27 24 L31 4 L35 24 Z" fill="#cfd8dc"/>
+  <path d="M7 6 L9 24 L11 24 Z M15 4 L17 24 L19 24 Z M23 6 L25 24 L27 24 Z M31 4 L33 24 L35 24 Z" fill="#90a4ae"/>
+</svg>

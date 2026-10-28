@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 
 import 'game_utama.dart';
-import 'level_config.dart';
 
-/// Level, skor, dan progres level di pojok kiri atas.
+/// Level, skor, dan sisa waktu level di pojok kiri atas.
 class HudOverlay extends StatelessWidget {
   const HudOverlay({super.key, required this.game});
 
@@ -32,10 +31,13 @@ class HudOverlay extends StatelessWidget {
               builder: (_, skor, _) => Text('Skor $skor', style: gaya),
             ),
             ValueListenableBuilder<int>(
-              valueListenable: game.dihindariDiLevelIni,
-              builder: (_, jumlah, _) => Text(
-                'Meteor $jumlah/${LevelConfig.meteorPerLevel}',
-                style: gaya.copyWith(color: Colors.white70, fontSize: 14),
+              valueListenable: game.sisaDetik,
+              builder: (_, sisa, _) => Text(
+                'Sisa waktu ${_formatWaktu(sisa)}',
+                style: gaya.copyWith(
+                  color: sisa <= 5 ? Colors.orangeAccent : Colors.white70,
+                  fontSize: 14,
+                ),
               ),
             ),
           ],
@@ -43,6 +45,12 @@ class HudOverlay extends StatelessWidget {
       ),
     );
   }
+}
+
+/// `75` -> `1:15`
+String _formatWaktu(int detik) {
+  final menit = detik ~/ 60;
+  return '$menit:${(detik % 60).toString().padLeft(2, '0')}';
 }
 
 /// Layar kalah dengan ringkasan dan tombol main lagi.

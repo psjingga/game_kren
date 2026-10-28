@@ -23,12 +23,13 @@ void main() {
         ),
       ),
     );
-    await tester.pump();
+    await tester.runAsync(() async {
+      await game.loaded;
+      await game.ready();
+    });
     await tester.pump();
 
-    for (var i = 0; i < LevelConfig.meteorPerLevel; i++) {
-      game.meteorDihindari();
-    }
+    game.update(LevelConfig.durasiLevel);
     await tester.pump();
     expect(find.text('LEVEL 1 SELESAI!'), findsOneWidget);
 

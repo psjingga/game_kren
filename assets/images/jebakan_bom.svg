@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" width="40" height="40">
+  <!-- Bom -->
+  <circle cx="18" cy="23" r="15" fill="#212121"/>
+  <circle cx="13" cy="18" r="4" fill="#616161"/>
+  <rect x="22" y="5" width="8" height="7" rx="1.5" fill="#424242" transform="rotate(35 26 8.5)"/>
+  <path d="M29 6 Q33 2 36 4" stroke="#8d6e63" stroke-width="2" fill="none"/>
+  <circle cx="36" cy="4" r="3.5" fill="#ff9800"/>
+  <circle cx="36" cy="4" r="1.8" fill="#ffeb3b"/>
+</svg>

@@ -49,13 +49,10 @@ class _BannerAdSlotState extends State<BannerAdSlot> {
     final banner = _banner;
     if (banner == null) return const SizedBox.shrink();
 
-    return SafeArea(
-      top: false,
-      child: SizedBox(
-        width: AdSize.banner.width.toDouble(),
-        height: AdSize.banner.height.toDouble(),
-        child: _isLoaded ? AdWidget(ad: banner) : null,
-      ),
+    return SizedBox(
+      width: AdSize.banner.width.toDouble(),
+      height: AdSize.banner.height.toDouble(),
+      child: _isLoaded ? AdWidget(ad: banner) : null,
     );
   }
 }

@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 80" width="52" height="80">
+  <!-- Mobil sport biru dilihat dari atas, menghadap ke atas -->
+  <rect x="1" y="12" width="7" height="16" rx="2" fill="#1a1a1a"/>
+  <rect x="44" y="12" width="7" height="16" rx="2" fill="#1a1a1a"/>
+  <rect x="1" y="54" width="7" height="16" rx="2" fill="#1a1a1a"/>
+  <rect x="44" y="54" width="7" height="16" rx="2" fill="#1a1a1a"/>
+  <path d="M14 2 Q26 -1 38 2 Q46 5 46 16 L46 66 Q46 77 38 78 L14 78 Q6 77 6 66 L6 16 Q6 5 14 2 Z" fill="#1e88e5"/>
+  <path d="M10 8 Q26 4 42 8 L42 12 Q26 9 10 12 Z" fill="#64b5f6"/>
+  <path d="M11 24 Q26 19 41 24 L38 36 Q26 33 14 36 Z" fill="#0d2b45"/>
+  <rect x="14" y="38" width="24" height="16" rx="3" fill="#1565c0"/>
+  <path d="M14 56 Q26 54 38 56 L40 64 Q26 62 12 64 Z" fill="#0d2b45"/>
+  <rect x="24" y="3" width="4" height="74" fill="#ffffff" opacity="0.85"/>
+  <ellipse cx="13" cy="5" rx="4" ry="2.5" fill="#fff59d"/>
+  <ellipse cx="39" cy="5" rx="4" ry="2.5" fill="#fff59d"/>
+  <rect x="9" y="74" width="8" height="3" rx="1" fill="#e53935"/>
+  <rect x="35" y="74" width="8" height="3" rx="1" fill="#e53935"/>
+</svg>

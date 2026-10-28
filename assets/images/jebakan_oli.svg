@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" width="40" height="40">
+  <!-- Tumpahan oli -->
+  <path d="M20 3 C29 3 31 9 35 12 C40 16 38 24 34 28 C30 33 33 38 24 37 C16 36 13 39 8 35 C2 31 4 25 3 20 C2 13 6 9 11 7 C14 5 16 3 20 3 Z" fill="#1b1b2f"/>
+  <ellipse cx="14" cy="15" rx="6" ry="3" fill="#7e57c2" opacity="0.55" transform="rotate(-20 14 15)"/>
+  <ellipse cx="25" cy="25" rx="5" ry="2" fill="#26c6da" opacity="0.4" transform="rotate(15 25 25)"/>
+  <circle cx="30" cy="11" r="2" fill="#ffffff" opacity="0.35"/>
+</svg>

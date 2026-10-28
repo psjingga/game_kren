@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" width="40" height="40">
+  <!-- Kerucut lalu lintas -->
+  <rect x="3" y="33" width="34" height="5" rx="1.5" fill="#e65100"/>
+  <path d="M17 2 L23 2 L34 33 L6 33 Z" fill="#ff6d00"/>
+  <path d="M14.2 11 L25.8 11 L28 17 L12 17 Z" fill="#ffffff"/>
+  <path d="M10.6 21 L29.4 21 L31.4 27 L8.6 27 Z" fill="#ffffff"/>
+</svg>
