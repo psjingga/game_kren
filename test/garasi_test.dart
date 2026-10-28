@@ -1,12 +1,12 @@
 import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:game_kren_kamu/game/dompet.dart';
-import 'package:game_kren_kamu/game/game_utama.dart';
-import 'package:game_kren_kamu/game/garasi.dart';
-import 'package:game_kren_kamu/game/garasi_overlay.dart';
-import 'package:game_kren_kamu/game/overlays.dart';
-import 'package:game_kren_kamu/game/penyimpanan.dart';
+import 'package:game_kren_kamu/bersama/dompet.dart';
+import 'package:game_kren_kamu/games/balap/game_utama.dart';
+import 'package:game_kren_kamu/games/balap/garasi.dart';
+import 'package:game_kren_kamu/games/balap/garasi_overlay.dart';
+import 'package:game_kren_kamu/games/balap/overlays.dart';
+import 'package:game_kren_kamu/bersama/penyimpanan.dart';
 
 DataMobil _mobil(String id) => daftarMobil.firstWhere((m) => m.id == id);
 
@@ -94,7 +94,6 @@ void main() {
             overlayBuilderMap: {
               GameUtama.overlayMenu: (_, game) => MenuOverlay(game: game),
               GameUtama.overlayGarasi: (_, game) => GarasiOverlay(game: game),
-              GameUtama.overlayHadiahHarian: (_, _) => const SizedBox(),
             },
           ),
         ),

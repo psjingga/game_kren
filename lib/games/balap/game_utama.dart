@@ -6,12 +6,11 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
 import 'barang_ambilan.dart';
-import 'dompet.dart';
+import '../../bersama/dompet.dart';
 import 'efek_crash.dart';
 import 'gambar_game.dart';
 import 'garasi.dart';
 import 'garis_finish.dart';
-import 'hadiah_harian.dart';
 import 'jam.dart';
 import 'jalan.dart';
 import 'jebakan.dart';
@@ -20,7 +19,7 @@ import 'level_config.dart';
 import 'misi.dart';
 import 'mobil_lawan.dart';
 import 'oli.dart';
-import 'penyimpanan.dart';
+import '../../bersama/penyimpanan.dart';
 import 'player.dart';
 import 'power_up.dart';
 import 'rintangan.dart';
@@ -32,10 +31,12 @@ class GameUtama extends FlameGame with HasCollisionDetection {
     Random? random,
     this.onGameOver,
     Penyimpanan? penyimpanan,
+    Dompet? dompet,
     bool mulaiDiMenu = false,
     this._jam,
   }) : random = random ?? Random(),
        _penyimpanan = penyimpanan ?? PenyimpananMemori(),
+       _dompetLuar = dompet,
        _diMenu = mulaiDiMenu {
     _rekorSebelumMain = rekor.value;
   }
@@ -43,7 +44,6 @@ class GameUtama extends FlameGame with HasCollisionDetection {
   static const overlayMenu = 'menu';
   static const overlayGarasi = 'garasi';
   static const overlayMisi = 'misi';
-  static const overlayHadiahHarian = 'hadiahHarian';
   static const overlayHud = 'hud';
   static const overlayJeda = 'jeda';
   static const overlayLevelSelesai = 'levelSelesai';
@@ -80,6 +80,7 @@ class GameUtama extends FlameGame with HasCollisionDetection {
 
   final Penyimpanan _penyimpanan;
   final DateTime Function()? _jam;
+  final Dompet? _dompetLuar;
 
   /// Didengarkan oleh overlay Flutter (menu, HUD, Level Selesai, Game Over).
   final level = ValueNotifier<int>(1);
@@ -94,12 +95,11 @@ class GameUtama extends FlameGame with HasCollisionDetection {
     _penyimpanan.bacaInt(KunciSimpan.rekor) ?? 0,
   );
 
-  /// Total koin sepanjang masa, dipakai di garasi.
-  late final dompet = Dompet(_penyimpanan);
+  /// Total koin sepanjang masa, dipakai bersama semua game di aplikasi.
+  late final dompet = _dompetLuar ?? Dompet(_penyimpanan);
   ValueNotifier<int> get totalKoin => dompet.saldo;
 
   late final garasi = Garasi(_penyimpanan, dompet);
-  late final hadiahHarian = HadiahHarian(_penyimpanan, dompet, jam: _jam);
   late final misi = MisiHarian(_penyimpanan, dompet, jam: _jam);
   final status = StatusPowerUp();
 
@@ -177,9 +177,6 @@ class GameUtama extends FlameGame with HasCollisionDetection {
     _player = Player();
     add(_player);
     add(LapisanSuasana());
-    if (_diMenu && hadiahHarian.tersedia.value) {
-      overlays.add(overlayHadiahHarian);
-    }
   }
 
   @override
@@ -316,13 +313,6 @@ class GameUtama extends FlameGame with HasCollisionDetection {
     overlays
       ..remove(layar)
       ..add(overlayMenu);
-  }
-
-  /// Dari tombol "Klaim" di jendela hadiah harian.
-  int klaimHadiahHarian() {
-    final jumlah = hadiahHarian.klaim();
-    overlays.remove(overlayHadiahHarian);
-    return jumlah;
   }
 
   /// Dari tombol "Main" di menu awal.
@@ -470,7 +460,7 @@ class GameUtama extends FlameGame with HasCollisionDetection {
     if (!_sedangBermain) return;
     _isGameOver = true;
     _lepasTombol();
-    _simpanHasil();
+    simpanHasil();
 
     _player.tabrakan();
     add(buatLedakan(titikTabrakan ?? _player.center, random));
@@ -520,13 +510,11 @@ class GameUtama extends FlameGame with HasCollisionDetection {
       ..remove(overlayJeda)
       ..remove(overlayHud)
       ..add(overlayMenu);
-    hadiahHarian.periksaLagi();
-    if (hadiahHarian.tersedia.value) overlays.add(overlayHadiahHarian);
     resumeEngine(); // jalan tetap bergerak di belakang menu
   }
 
   void _ulangPermainan() {
-    _simpanHasil(); // permainan yang ditinggal dari jeda tetap dihitung
+    simpanHasil(); // permainan yang ditinggal dari jeda tetap dihitung
     level.value = 1;
     skor.value = 0;
     koin.value = 0;
@@ -543,8 +531,9 @@ class GameUtama extends FlameGame with HasCollisionDetection {
     _lepasTombol();
   }
 
-  /// Rekor baru dan koin yang diambil disimpan ke HP.
-  void _simpanHasil() {
+  /// Rekor baru dan koin yang diambil disimpan ke HP. Dipanggil juga saat
+  /// layar balap ditutup di tengah permainan.
+  void simpanHasil() {
     if (skor.value > rekor.value) {
       rekor.value = skor.value;
       _penyimpanan.tulisInt(KunciSimpan.rekor, rekor.value);
@@ -580,9 +569,8 @@ class GameUtama extends FlameGame with HasCollisionDetection {
       notifier.dispose();
     }
     sisaDetik.dispose();
-    dompet.dispose();
+    if (_dompetLuar == null) dompet.dispose();
     garasi.dispose();
-    hadiahHarian.dispose();
     misi.dispose();
     status.dispose();
     super.onRemove();

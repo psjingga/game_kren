@@ -15,7 +15,10 @@ abstract class Penyimpanan {
 
 /// Kunci yang dipakai lebih dari satu fitur.
 abstract class KunciSimpan {
+  /// Rekor Balap Kren (nama kunci lama, sebelum ada game lain).
   static const rekor = 'rekor';
+  static const rekorTerbang = 'rekor_terbang';
+  static const rekor2048 = 'rekor_2048';
   static const totalKoin = 'total_koin';
 }
 

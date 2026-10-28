@@ -4,17 +4,17 @@ import 'package:flame/components.dart';
 import 'package:flame_test/flame_test.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:game_kren_kamu/game/game_utama.dart';
-import 'package:game_kren_kamu/game/jalan.dart';
-import 'package:game_kren_kamu/game/jebakan.dart';
-import 'package:game_kren_kamu/game/koin.dart';
-import 'package:game_kren_kamu/game/level_config.dart';
-import 'package:game_kren_kamu/game/misi.dart';
-import 'package:game_kren_kamu/game/mobil_lawan.dart';
-import 'package:game_kren_kamu/game/oli.dart';
-import 'package:game_kren_kamu/game/player.dart';
-import 'package:game_kren_kamu/game/power_up.dart';
-import 'package:game_kren_kamu/game/rintangan.dart';
+import 'package:game_kren_kamu/games/balap/game_utama.dart';
+import 'package:game_kren_kamu/games/balap/jalan.dart';
+import 'package:game_kren_kamu/games/balap/jebakan.dart';
+import 'package:game_kren_kamu/games/balap/koin.dart';
+import 'package:game_kren_kamu/games/balap/level_config.dart';
+import 'package:game_kren_kamu/games/balap/misi.dart';
+import 'package:game_kren_kamu/games/balap/mobil_lawan.dart';
+import 'package:game_kren_kamu/games/balap/oli.dart';
+import 'package:game_kren_kamu/games/balap/player.dart';
+import 'package:game_kren_kamu/games/balap/power_up.dart';
+import 'package:game_kren_kamu/games/balap/rintangan.dart';
 
 GameUtama _buatGame() {
   final game = GameUtama(

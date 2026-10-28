@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 
-import 'dompet.dart';
-import 'penyimpanan.dart';
+import '../../bersama/dompet.dart';
+import '../../bersama/penyimpanan.dart';
 
 /// Satu mobil di garasi.
 class DataMobil {

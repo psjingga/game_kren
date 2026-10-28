@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:game_kren_kamu/game/dompet.dart';
-import 'package:game_kren_kamu/game/hadiah_harian.dart';
-import 'package:game_kren_kamu/game/misi.dart';
-import 'package:game_kren_kamu/game/penyimpanan.dart';
+import 'package:game_kren_kamu/bersama/dompet.dart';
+import 'package:game_kren_kamu/bersama/hadiah_harian.dart';
+import 'package:game_kren_kamu/games/balap/misi.dart';
+import 'package:game_kren_kamu/bersama/penyimpanan.dart';
 
 /// Jam palsu yang bisa dimajukan per hari.
 class _Jam {

@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
+import '../../bersama/jumlah_koin.dart';
+
 import 'game_utama.dart';
 import 'power_up.dart';
 
@@ -20,127 +22,125 @@ final _gayaTombolKedua = OutlinedButton.styleFrom(
   textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
 );
 
-/// Ikon koin kecil + jumlah, dipakai di HUD, menu, garasi, dan Game Over.
-class JumlahKoin extends StatelessWidget {
-  const JumlahKoin(this.jumlah, {super.key, this.ukuran = 18});
-
-  final int jumlah;
-  final double ukuran;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(Icons.monetization_on, color: _kuning, size: ukuran + 4),
-        const SizedBox(width: 4),
-        Text(
-          '$jumlah',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: ukuran,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
 /// Layar awal: judul, rekor, total koin, tombol Main, Garasi, dan Misi.
 class MenuOverlay extends StatelessWidget {
-  const MenuOverlay({super.key, required this.game});
+  const MenuOverlay({super.key, required this.game, this.onKeBeranda});
 
   final GameUtama game;
 
+  /// Kembali ke beranda aplikasi (daftar game). `null` = tanpa tombol.
+  final VoidCallback? onKeBeranda;
+
   @override
   Widget build(BuildContext context) {
+    final onKeBeranda = this.onKeBeranda;
     return ColoredBox(
       color: Colors.black.withValues(alpha: 0.6),
-      child: Center(
-        // Bisa digulir di layar pendek.
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.directions_car_filled, color: _kuning, size: 72),
-              const Text(
-                'KREN KAMU',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 44,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 2,
-                ),
+      child: Stack(
+        children: [
+          if (onKeBeranda != null)
+            Positioned(
+              left: 4,
+              top: 4,
+              child: IconButton(
+                onPressed: onKeBeranda,
+                tooltip: 'Beranda',
+                icon: const Icon(Icons.home_rounded),
+                color: Colors.white,
+                iconSize: 30,
               ),
-              const Text(
-                'Hindari jebakan, kumpulkan koin!',
-                style: TextStyle(color: Colors.white70, fontSize: 16),
-              ),
-              const SizedBox(height: 32),
-              ValueListenableBuilder<int>(
-                valueListenable: game.rekor,
-                builder: (_, rekor, _) => Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.emoji_events, color: _kuning),
-                    const SizedBox(width: 6),
-                    Text(
-                      'Rekor $rekor',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
+            ),
+          Center(
+            // Bisa digulir di layar pendek.
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.directions_car_filled,
+                    color: _kuning,
+                    size: 72,
+                  ),
+                  const Text(
+                    'KREN KAMU',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 44,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 2,
                     ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 8),
-              ValueListenableBuilder<int>(
-                valueListenable: game.totalKoin,
-                builder: (_, total, _) => JumlahKoin(total, ukuran: 20),
-              ),
-              const SizedBox(height: 32),
-              FilledButton.icon(
-                onPressed: game.mulai,
-                icon: const Icon(Icons.play_arrow_rounded),
-                label: const Text('MAIN'),
-                style: _gayaTombolUtama,
-              ),
-              const SizedBox(height: 12),
-              OutlinedButton.icon(
-                onPressed: () => game.bukaDariMenu(GameUtama.overlayGarasi),
-                icon: const Icon(Icons.garage_rounded),
-                label: const Text('GARASI'),
-                style: _gayaTombolKedua,
-              ),
-              const SizedBox(height: 12),
-              ValueListenableBuilder(
-                valueListenable: game.misi.daftar,
-                builder: (_, _, _) {
-                  final siap = game.misi.jumlahBisaDiklaim;
-                  return Badge(
-                    isLabelVisible: siap > 0,
-                    label: Text('$siap'),
-                    child: OutlinedButton.icon(
-                      onPressed: () => game.bukaDariMenu(GameUtama.overlayMisi),
-                      icon: const Icon(Icons.flag_rounded),
-                      label: const Text('MISI HARIAN'),
-                      style: _gayaTombolKedua,
+                  ),
+                  const Text(
+                    'Hindari jebakan, kumpulkan koin!',
+                    style: TextStyle(color: Colors.white70, fontSize: 16),
+                  ),
+                  const SizedBox(height: 32),
+                  ValueListenableBuilder<int>(
+                    valueListenable: game.rekor,
+                    builder: (_, rekor, _) => Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.emoji_events, color: _kuning),
+                        const SizedBox(width: 6),
+                        Text(
+                          'Rekor $rekor',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
                     ),
-                  );
-                },
+                  ),
+                  const SizedBox(height: 8),
+                  ValueListenableBuilder<int>(
+                    valueListenable: game.totalKoin,
+                    builder: (_, total, _) => JumlahKoin(total, ukuran: 20),
+                  ),
+                  const SizedBox(height: 32),
+                  FilledButton.icon(
+                    onPressed: game.mulai,
+                    icon: const Icon(Icons.play_arrow_rounded),
+                    label: const Text('MAIN'),
+                    style: _gayaTombolUtama,
+                  ),
+                  const SizedBox(height: 12),
+                  OutlinedButton.icon(
+                    onPressed: () => game.bukaDariMenu(GameUtama.overlayGarasi),
+                    icon: const Icon(Icons.garage_rounded),
+                    label: const Text('GARASI'),
+                    style: _gayaTombolKedua,
+                  ),
+                  const SizedBox(height: 12),
+                  ValueListenableBuilder(
+                    valueListenable: game.misi.daftar,
+                    builder: (_, _, _) {
+                      final siap = game.misi.jumlahBisaDiklaim;
+                      return Badge(
+                        isLabelVisible: siap > 0,
+                        label: Text('$siap'),
+                        child: OutlinedButton.icon(
+                          onPressed: () =>
+                              game.bukaDariMenu(GameUtama.overlayMisi),
+                          icon: const Icon(Icons.flag_rounded),
+                          label: const Text('MISI HARIAN'),
+                          style: _gayaTombolKedua,
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Tahan tombol ◀ ▶ untuk menyetir',
+                    style: TextStyle(color: Colors.white54, fontSize: 13),
+                  ),
+                ],
               ),
-              const SizedBox(height: 16),
-              const Text(
-                'Tahan tombol ◀ ▶ untuk menyetir',
-                style: TextStyle(color: Colors.white54, fontSize: 13),
-              ),
-            ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }

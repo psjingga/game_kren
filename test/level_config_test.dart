@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:game_kren_kamu/game/level_config.dart';
+import 'package:game_kren_kamu/games/balap/level_config.dart';
 
 void main() {
   test('level 1 sama dengan game awal', () {

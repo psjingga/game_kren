@@ -5,17 +5,18 @@ import 'package:flame/game.dart';
 import 'package:flame_test/flame_test.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:game_kren_kamu/game/efek_crash.dart';
-import 'package:game_kren_kamu/game/game_utama.dart';
-import 'package:game_kren_kamu/game/garis_finish.dart';
-import 'package:game_kren_kamu/game/level_config.dart';
-import 'package:game_kren_kamu/game/overlays.dart';
-import 'package:game_kren_kamu/game/jam.dart';
-import 'package:game_kren_kamu/game/jebakan.dart';
-import 'package:game_kren_kamu/game/koin.dart';
-import 'package:game_kren_kamu/game/penyimpanan.dart';
-import 'package:game_kren_kamu/game/player.dart';
-import 'package:game_kren_kamu/layar_game.dart';
+import 'package:game_kren_kamu/games/balap/efek_crash.dart';
+import 'package:game_kren_kamu/games/balap/game_utama.dart';
+import 'package:game_kren_kamu/games/balap/garis_finish.dart';
+import 'package:game_kren_kamu/bersama/layanan.dart';
+import 'package:game_kren_kamu/games/balap/level_config.dart';
+import 'package:game_kren_kamu/games/balap/overlays.dart';
+import 'package:game_kren_kamu/games/balap/jam.dart';
+import 'package:game_kren_kamu/games/balap/jebakan.dart';
+import 'package:game_kren_kamu/games/balap/koin.dart';
+import 'package:game_kren_kamu/bersama/penyimpanan.dart';
+import 'package:game_kren_kamu/games/balap/player.dart';
+import 'package:game_kren_kamu/games/balap/layar_balap.dart';
 
 /// Game dengan random tetap dan overlay terdaftar (tanpa GameWidget, Flame
 /// menolak membuka overlay yang belum punya builder).
@@ -34,7 +35,6 @@ GameUtama _buatGame({
     GameUtama.overlayMenu,
     GameUtama.overlayGarasi,
     GameUtama.overlayMisi,
-    GameUtama.overlayHadiahHarian,
     GameUtama.overlayHud,
     GameUtama.overlayJeda,
     GameUtama.overlayLevelSelesai,
@@ -700,10 +700,12 @@ void main() {
     },
   );
 
-  testWidgets('LayarGame dimulai dari menu, tombol MAIN memulai permainan', (
+  testWidgets('LayarBalap dimulai dari menu, tombol MAIN memulai permainan', (
     tester,
   ) async {
-    await tester.pumpWidget(const MaterialApp(home: LayarGame(showAds: false)));
+    await tester.pumpWidget(
+      MaterialApp(home: LayarBalap(layanan: Layanan.uji())),
+    );
     // Pemuatan gambar butuh async sungguhan, bukan waktu palsu testWidgets.
     await tester.runAsync(
       () => Future<void>.delayed(const Duration(seconds: 1)),
@@ -713,12 +715,6 @@ void main() {
 
     expect(find.text('KREN KAMU'), findsOneWidget);
     expect(find.text('Rekor 0'), findsOneWidget);
-
-    // Pertama kali dibuka: hadiah harian muncul di atas menu.
-    expect(find.text('HADIAH HARIAN'), findsOneWidget);
-    await tester.tap(find.text('KLAIM +10'));
-    await tester.pump();
-    expect(find.text('HADIAH HARIAN'), findsNothing);
 
     await tester.tap(find.text('MAIN'));
     await tester.pump();

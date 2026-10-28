@@ -2,9 +2,9 @@ import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 
-import 'dompet.dart';
-import 'hadiah_harian.dart';
-import 'penyimpanan.dart';
+import '../../bersama/dompet.dart';
+import '../../bersama/hadiah_harian.dart';
+import '../../bersama/penyimpanan.dart';
 
 enum JenisMisi { koin, jam, hindari, nyaris, powerUp, level }
 

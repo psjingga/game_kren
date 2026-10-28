@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 import 'garasi.dart';
+import '../../bersama/jumlah_koin.dart';
 import 'game_utama.dart';
-import 'overlays.dart';
 
 /// Layar garasi: daftar mobil untuk dibeli dengan koin atau dipakai.
 class GarasiOverlay extends StatelessWidget {
